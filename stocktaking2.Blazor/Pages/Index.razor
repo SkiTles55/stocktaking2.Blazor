@@ -1,0 +1,141 @@
+﻿@page "/"
+@using stocktaking2.Blazor.Data
+@using ChartJs.Blazor.Charts
+@using ChartJs.Blazor.ChartJS.BarChart
+@using ChartJs.Blazor.ChartJS.BarChart.Axes
+@using ChartJs.Blazor.ChartJS.Common.Axes
+@using ChartJs.Blazor.ChartJS.Common.Wrappers
+@using ChartJs.Blazor.ChartJS.Common.Axes.Ticks
+@using ChartJs.Blazor.ChartJS.PieChart
+@using ChartJs.Blazor.ChartJS.Common.Properties
+@using stocktaking2.Blazor.Helpers
+@using stocktaking2.Blazor.Helpers.RandomColor
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 text-gray-800">Добро пожаловать!</h1>
+        </div>
+        <div class="row">
+            <div class="col-8">
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Количество техники по отделам</h6>
+                    </div>
+                    <div class="card-body">
+                        <ChartJsBarChart @ref="depUnits" Config="@barConfig" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Количество техники по типу</h6>
+                    </div>
+                    <div class="card-body">
+                        <ChartJsPieChart @ref="catUnits" Config="@pieConfig" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    private PieConfig pieConfig;
+    private ChartJsPieChart catUnits;
+    private ChartJsBarChart depUnits;
+    private BarConfig barConfig;
+    private BarDataset<DoubleWrapper> depUnitsDataSet;
+    private ChartData data;
+
+    protected override void OnInitialized()
+    {
+        data = @Service.GetCharts();
+        pieConfig = new PieConfig
+        {
+            Options = new PieOptions
+            {
+                Title = new OptionsTitle
+                {
+                    Display = false,
+                    Text = "Sample"
+                },
+                Responsive = true,
+                Animation = new ArcAnimation
+                {
+                    AnimateRotate = true,
+                    AnimateScale = true
+                }
+            }
+        };
+
+        barConfig = new BarConfig()
+        {
+            Options = new BarOptions
+            {
+                Title = new OptionsTitle
+                {
+                    Display = false,
+                    Text = "Simple"
+                },
+                Scales = new BarScales
+                {
+                    XAxes = new List<CartesianAxis>
+            {
+                        new BarCategoryAxis
+                        {
+                            BarPercentage = 1,
+                            BarThickness = BarThickness.Flex
+                        }
+                    },
+                    YAxes = new List<CartesianAxis>
+            {
+                        new BarLinearCartesianAxis
+                        {
+                            Ticks = new LinearCartesianTicks
+                            {
+                                BeginAtZero = true
+                            }
+                        }
+                    }
+                },
+                MaintainAspectRatio = false,
+                Responsive = true
+            }
+        };
+
+        pieConfig.Data.Labels.AddRange(data.catUnitsPie.Select(x => x.Key));
+
+        barConfig.Data.Labels.AddRange(data.depUnitsBar.Select(x => x.Key));
+
+        var pieSet = new PieDataset
+        {
+            BackgroundColor = RandomColor.GetColorsArray(ColorScheme.Random, Luminosity.Light, pieConfig.Data.Labels.Count),
+            BorderWidth = 0,
+            HoverBackgroundColor = "#4e73df",
+            HoverBorderColor = "#4e73df",
+            HoverBorderWidth = 1,
+            BorderColor = "#ffffff"
+        };
+
+        depUnitsDataSet = new BarDataset<DoubleWrapper>
+        {
+            BackgroundColor = RandomColor.GetColorsArray(ColorScheme.Random, Luminosity.Light, barConfig.Data.Labels.Count),
+            BorderWidth = 0,
+            HoverBackgroundColor = "#4e73df",
+            HoverBorderColor = "#4e73df",
+            HoverBorderWidth = 1,
+            BorderColor = "#ffffff",
+            Label = "Количество техники"
+        };
+
+        pieSet.Data.AddRange(data.catUnitsPie.Select(x => x.Value));
+        pieConfig.Data.Datasets.Add(pieSet);
+
+        depUnitsDataSet.AddRange(data.depUnitsBar.Select(x => x.Value).Wrap());
+        barConfig.Data.Datasets.Add(depUnitsDataSet);
+    }
+}

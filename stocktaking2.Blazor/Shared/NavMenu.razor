@@ -1,0 +1,81 @@
+﻿<ul class="@NavBar()" id="accordionSidebar">
+    <NavLink class="sidebar-brand d-flex align-items-center justify-content-center" href="#" Match="NavLinkMatch.All">
+        <div class="sidebar-brand-icon">
+            <i class="fas fa-desktop"></i>
+        </div>
+        <div class="sidebar-brand-text mx-3">Учет техники</div>
+    </NavLink>
+    <hr class="sidebar-divider my-0">
+    <AuthorizeView>
+        <Authorized>
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/units">
+                    <i class="fas fa-th-list"></i>
+                    <span>Техника</span>
+                </NavLink>
+            </li>
+            @if (@context.User.IsInRole("Admin"))
+            {
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/units/add">
+                        <i class="fas fa-plus"></i>
+                        <span>Добавить технику</span>
+                    </NavLink>
+                </li>
+            }
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/employers">
+                    <i class="fas fa-user"></i>
+                    <span>Сотрудники</span>
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/departaments">
+                    <i class="fas fa-building"></i>
+                    <span>Отделы</span>
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link" href="/emails">
+                    <i class="fas fa-at"></i>
+                    <span>Аккаунты Email</span>
+                </NavLink>
+            </li>
+            @if (@context.User.IsInRole("Admin"))
+            {
+                <li class="nav-item">
+                    <a class="nav-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        <i class="fas fa-fw fa-cog"></i>
+                        <span>Дополнительно</span>
+                    </a>
+                    <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+                        <div class="bg-white py-2 collapse-inner rounded">
+                            <NavLink class="collapse-item" href="/administration/users">Пользователи</NavLink>
+                            <NavLink class="collapse-item" href="/administration/categories">Типы техники</NavLink>
+                            <NavLink class="collapse-item" href="/administration/manufacturers">Производители</NavLink>
+                            <NavLink class="collapse-item" href="/administration/unitstatuses">Статусы техники</NavLink>
+                            <NavLink class="collapse-item" href="/administration/winnames">Операционные системы</NavLink>
+                            <NavLink class="collapse-item" href="/administration/installedsoft">Программы</NavLink>
+                        </div>
+                    </div>
+                </li>
+            }
+        </Authorized>
+    </AuthorizeView>
+    <hr class="sidebar-divider d-none d-md-block">
+    <div class="text-center d-none d-md-inline">
+        <button class="rounded-circle border-0" id="sidebarToggle" @onclick="(()=>Toogle())"></button>
+    </div>
+</ul>
+@code {
+    private Boolean _Show { get; set; }
+    void Toogle()
+    {
+        _Show = !_Show;
+    }
+
+    string NavBar()
+    {
+        return !_Show ? "navbar-nav bg-gradient-primary sidebar sidebar-dark accordion sticky-top" : "navbar-nav bg-gradient-primary sidebar sidebar-dark accordion sticky-top toggled";
+    }
+}

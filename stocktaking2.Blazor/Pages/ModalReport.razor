@@ -1,0 +1,67 @@
+﻿@if (_Show)
+{
+    <div class="modal fade show" id="myModal" style=" display: block;">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                @if (Work)
+                {
+                    <div class="loading">
+                        <div class="loadbar">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary" role="status" style="width: 5rem; height: 5rem;">
+                                    <span class="sr-only">Loading...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-backdrop fade show"></div>
+                }
+                <div class="modal-header">
+                    <h3 class="modal-title">@Title</h3>
+                    <button type="button" class="close" data-dismiss="modal" @onclick="Show" disabled="@Work">&times;</button>
+                </div>
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success btn-icon-split" @onclick="OnClick" disabled="@Work">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-download"></i>
+                        </span>
+                        <span class="text">Скачать</span>
+                    </button>
+                    <button class="btn btn-danger btn-icon-split" @onclick="Show" disabled="@Work">
+                        <span class="icon text-white-50">
+                            <i class="far fa-window-close"></i>
+                        </span>
+                        <span class="text">Отмена</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+@code {
+    private Boolean _Show { get; set; }
+    [Parameter]
+    public string Title { get; set; }
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private Boolean Work { get; set; }
+
+    public void Show()
+    {
+        if (Work) Work = false;
+        _Show = !_Show;
+    }
+
+    public void StartWork()
+    {
+        //Work = !Work;
+        Work = true;
+    }
+}

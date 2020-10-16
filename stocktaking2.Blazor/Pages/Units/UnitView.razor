@@ -1,0 +1,1662 @@
+﻿@page "/unit/{Id:int}"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using stocktaking2.Blazor.Helpers
+@using System.Security.Claims
+@using System.IO
+@using LoreSoft.Blazor.Controls
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JS
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        @if (unit == null)
+        {
+            <p><em>Ошибка. Техника с таким ID не найдена.</em></p>
+        }
+        else
+        {
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Карточка техники</h1>
+            </div>
+            <div class="row">
+                <div class="col-xl-8 col-lg-7">
+                    <div class="card shadow mb-4 border-left-primary">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h5 class="m-0 font-weight-bold text-primary">@unit.Category.Name</h5>
+                            <button type="button" class="btn btn-link text-decoration-none" @onclick="Print" style="padding:0; border:0;"><i class="fas fa-print fa-sm"></i> Печать карточки</button>
+                        </div>
+                        <div class="card-body">
+                            @if (unit.Category.Manufacturer)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Производитель</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.ManufacturerId != null ? unit.Manufacturer.Name : "Не указан")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(1))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Model)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Модель</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(!string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(1))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            <div class="form-group row">
+                                <div class="col-3">
+                                    <p>Статус</p>
+                                </div>
+                                <div class="col-md-auto">
+                                    <p><b>@unit.UnitStatus.Name</b></p>
+                                </div>
+                                @if (@context.User.IsInRole("Admin"))
+                                {
+                                    <div class="col-1">
+                                        <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(3))">
+                                            <i class="far fa-edit"></i>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                            @if (unit.Category.Location)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Местоположение</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.Location ?? "Не указано")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(2))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.InventId)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Инвентарный номер</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.InventId ?? "Не указан")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(3))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Serial)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Серийный номер</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.Serial ?? "Не указан")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(4))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.BuyDate)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Дата приобретения</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d") : "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditDateInput(1))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.InstallDate)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Дата установки</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d") : "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditDateInput(2))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Employer)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Сотрудник</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.EmployerId != null ? unit.Employer.Name : "Не указан")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(2))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Departament)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Отдел</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.DepartamentId != null ? unit.Departament.Name : "Не указан")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin") && unit.EmployerId == null)
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(4))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.WinName)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Операционная система</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.WinNameId != null ? unit.WinName.Name : "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(5))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Processor)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Процессор</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.Processor ?? "Не указан")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(5))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Motherboard)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Материнская плата</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.Motherboard ?? "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(6))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.DDR)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Оперативная память</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.DDR ?? "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(7))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.Specs)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Характеристики</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.Specs ?? "Не указаны")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditTextarea(1))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.CartridgeModel)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Модель картриджа</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.CartridgeModel ?? "Не указана")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(8))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.CartridgeCount)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Количество картриджей</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@(unit.CartridgeCount != null ? unit.CartridgeCount.ToString() : "Не указано")</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditIntInput())">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.StoredFiles)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Файлы</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        @if (unit.StoredFiles.Count > 0)
+                                        {
+                                            <table class="tableEdited">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Дата</th>
+                                                        <th>Имя файла</th>
+                                                        @if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <th></th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var sw in unit.StoredFiles)
+                                                    {
+                                                        <tr>
+                                                            <td>@sw.UploadData.ToString("d")</td>
+                                                            <td><button class="btn btn-link" @onclick="@(()=>DownloadFile(sw))">@sw.FileName</button></td>
+                                                            @if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <td>
+                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteF(sw))">
+                                                                        <i class="fas fa-trash-alt"></i>
+                                                                    </button>
+                                                                </td>
+                                                            }
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <p><b>Файлы отсутствуют</b></p>
+                                        }
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-md-auto">
+                                            <InputFile OnChange="HandleSelection" />
+                                            <p>@status</p>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (unit.Category.ServiceWorks)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Ремонтные работы</p>
+                                    </div>
+                                    <div class="col-md-auto">
+                                        @if (unit.ServiceWorks.Count > 0)
+                                        {
+                                            <table class="tableEdited">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Дата</th>
+                                                        <th>Название</th>
+                                                        <th>Описание</th>
+                                                        @if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <th></th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach (var sw in unit.ServiceWorks)
+                                                    {
+                                                        <tr>
+                                                            <td>@sw.WorkDate.ToString("d")</td>
+                                                            <td>@sw.WorkName</td>
+                                                            <td>@sw.WorkDescr</td>
+                                                            @if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <td>
+                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteSW(sw))">
+                                                                        <i class="fas fa-trash-alt"></i>
+                                                                    </button>
+                                                                </td>
+                                                            }
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        }
+                                        else
+                                        {
+                                            <p><b>Не указаны</b></p>
+                                        }
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewSW())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            @if (@context.User.IsInRole("Admin"))
+                            {
+                                @if (unit.Category.InstaledSofts)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>Установленое ПО</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            @if (unit.UnitInstalledSofts.Count() > 0)
+                                            {
+                                                foreach (var soft in unit.UnitInstalledSofts)
+                                                {
+                                                    <p><b>@soft.InstalledSoft.Name</b></p>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <p><b>Не указано</b></p>
+                                            }
+                                        </div>
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSofts())">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (unit.Category.IPAdresses)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>IP адреса</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            @if (unit.IPAdresses.Count() > 0)
+                                            {
+                                                <table class="tableEdited">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>IP адрес</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var sw in unit.IPAdresses)
+                                                        {
+                                                            <tr>
+                                                                <td>@sw.IPAddress</td>
+                                                                <td>
+                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteIP(sw))">
+                                                                        <i class="fas fa-trash-alt"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            }
+                                            else
+                                            {
+                                                <p><b>Не указаны</b></p>
+                                            }
+                                        </div>
+                                        <div class="col-1">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewIP())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (unit.Category.NetName)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>Сетевое имя</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            <p><b>@(unit.NetName ?? "Не указано")</b></p>
+                                        </div>
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(9))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (unit.Category.BiosPass)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>Пароль BIOS</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            <p><b>@(unit.BiosPass ?? "Не указан")</b></p>
+                                        </div>
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(10))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (unit.Category.WinAccounts)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>Аккаунты Windows</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            @if (unit.WinAccounts.Count > 0)
+                                            {
+                                                <table class="tableEdited">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Логин</th>
+                                                            <th>Пароль</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var acc in unit.WinAccounts)
+                                                        {
+                                                            <tr>
+                                                                <td>@acc.Login</td>
+                                                                <td>@acc.Password</td>
+                                                                <th>
+                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteWA(acc))">
+                                                                        <i class="fas fa-trash-alt"></i>
+                                                                    </button>
+                                                                </th>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            }
+                                            else
+                                            {
+                                                <p><b>Не указаны</b></p>
+                                            }
+                                        </div>
+                                        <div class="col-1">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewWAcc())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (unit.Category.RdpConnects)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>RDP аккаунты</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            @if (unit.RdpConnects.Count > 0)
+                                            {
+                                                <table class="tableEdited">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Логин</th>
+                                                            <th>Пароль</th>
+                                                            <th>IP адрес</th>
+                                                            <th>Комментарий</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var acc in unit.RdpConnects)
+                                                        {
+                                                            <tr>
+                                                                <td>@acc.Login</td>
+                                                                <td>@acc.Password</td>
+                                                                <td>@acc.IPAddress</td>
+                                                                <td>@acc.Comment</td>
+                                                                <td>
+                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteRDP(acc))">
+                                                                        <i class="fas fa-trash-alt"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            }
+                                            else
+                                            {
+                                                <p><b>Не указаны</b></p>
+                                            }
+                                        </div>
+                                        <div class="col-1">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewRDP())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                @if (unit.Category.Comments)
+                                {
+                                    <div class="form-group row">
+                                        <div class="col-3">
+                                            <p>Комментарий</p>
+                                        </div>
+                                        <div class="col-md-auto">
+                                            <p><b>@(unit.Comment ?? "Не указаны")</b></p>
+                                        </div>
+                                        @if (@context.User.IsInRole("Admin"))
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditTextarea(2))">
+                                                    <i class="far fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4 col-lg-5">
+                    <div class="card shadow mb-4 border-left-primary">
+                        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                            <h5 class="m-0 font-weight-bold text-primary">История изменений</h5>
+                        </div>
+                        <div class="card-body">
+                            @foreach (var cH in unit.UnitHistories.Where(x => x.Secure == false || x.Secure == @context.User.IsInRole("Admin")).OrderByDescending(x => x.Time).Take(10))
+                            {
+                                <div class="alert alert-secondary" role="alert">
+                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                    <p>Пользователь: <b>@cH.UserName</b></p>
+                                    <p class="font-weight-bold">@cH.Change</p>
+                                </div>
+                            }
+                            @if ((unit.UnitHistories.Count > 10))
+                            {
+                                <div class="alert alert-secondary" role="alert">
+                                    <p>Показано 10 последних записей</p>
+                                    <button class="btn btn-info btn-icon-split" @onclick="ShowHistoryModal">
+                                        <span class="icon text-white-50">
+                                            <i class="fas fa-list"></i>
+                                        </span>
+                                        <span class="text">Просмотреть все</span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ModalHistory @ref="modalHistory">
+                <div style="overflow: auto; max-height:500px;">
+                    @foreach (var cH in unit.UnitHistories.OrderByDescending(x => x.Time))
+                    {
+                        @if (!cH.Secure || @context.User.IsInRole("Admin"))
+                        {
+                            <div class="alert alert-secondary" role="alert">
+                                <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                <p>Пользователь: <b>@cH.UserName</b></p>
+                                <p class="font-weight-bold">@cH.Change</p>
+                            </div>
+                        }
+                    }
+                </div>
+            </ModalHistory>
+            @if (@context.User.IsInRole("Admin"))
+            {
+                <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveOneInputChanges())">
+                    <div class="form-group">
+                        <input class="form-control" type="text" @bind="forEdit" />
+                    </div>
+                </ModalWindow>
+                <ModalWindow @ref="textareaModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveTextareaChanges())">
+                    <div class="form-group">
+                        <textarea type="text" class="form-control" @bind="forEdit" />
+                    </div>
+                </ModalWindow>
+                <ModalWindow @ref="selectModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveSelectListChanges())">
+                    <div class="form-group">
+                        <Typeahead SearchMethod="SearchSL"
+                                   ConvertMethod="ConvertSL"
+                                   Items="SelectList"
+                                   @bind-Value="selected"
+                                   Placeholder="@helptext"
+                                   SearchPlaceholder="Поиск"
+                                   AllowClear="false">
+                            <SelectedTemplate Context="slId">
+                                @LookupSL(slId).Value
+                            </SelectedTemplate>
+                            <ResultTemplate Context="sl">
+                                @sl.Value
+                            </ResultTemplate>
+                        </Typeahead>
+                    </div>
+                </ModalWindow>
+                <ModalWindow @ref="dateModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveDateInputChanges())">
+                    <div class="form-group">
+                        <input type="date" class="form-control" @bind="@Date">
+                    </div>
+                </ModalWindow>
+                <ModalWindow @ref="intModal" Title="Редактирование количества картриджей" ModalButtonOK="Сохранить" OnClick="(() => SaveIntInputChange())">
+                    <div class="form-group">
+                        <input type="number" class="form-control" @bind="@selected">
+                    </div>
+                </ModalWindow>
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del(What)">
+                    <div class="form-group">
+                        <p>@ModalTitle</p>
+                    </div>
+                </ModalYesNoDialog>
+                <ModalAddDialog @ref="addSW" Title="Добавление ремонта" OnClick="() => AddSW()">
+                    <div class="form-group row">
+                        <label for="wdate" class="col-3 col-form-label">Дата</label>
+                        <div class="col">
+                            <input id="wdate" name="text" type="date" class="form-control" @bind="@SWforAdd.WorkDate">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="workname" class="col-3 col-form-label">Название</label>
+                        <div class="col">
+                            <input id="workname" name="text" type="text" class="form-control" @bind="@SWforAdd.WorkName">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="workdescr" class="col-3 col-form-label">Описание</label>
+                        <div class="col">
+                            <input id="workdescr" name="text" type="text" class="form-control" @bind="@SWforAdd.WorkDescr">
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @error
+                        </div>
+                    }
+                </ModalAddDialog>
+                <ModalAddDialog @ref="addWA" Title="Добавление аккаунта Windows" OnClick="() => AddWA()">
+                    <div class="form-group row">
+                        <label for="winlogin" class="col-3 col-form-label">Логин</label>
+                        <div class="col">
+                            <input id="winlogin" name="text" type="text" class="form-control" @bind="@WAforAdd.Login">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="winpass" class="col-3 col-form-label">Пароль</label>
+                        <div class="col">
+                            <input id="winpass" name="text" type="text" class="form-control" @bind="@WAforAdd.Password">
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @error
+                        </div>
+                    }
+                </ModalAddDialog>
+                <ModalAddDialog @ref="addRDP" Title="Добавление RDP аккаунта" OnClick="(()=>AddRDP())">
+                    <label class="col">IP адрес</label>
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@RDip1">
+                        </div>
+                        <span>.</span>
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@RDip2">
+                        </div>
+                        <span>.</span>
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@RDip3">
+                        </div>
+                        <span>.</span>
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@RDip4">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="rdplogin" class="col-3 col-form-label">Логин</label>
+                        <div class="col">
+                            <input id="rdplogin" name="text" type="text" class="form-control" @bind="@RDPforAdd.Login">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="rdppass" class="col-3 col-form-label">Пароль</label>
+                        <div class="col">
+                            <input id="rdppass" name="text" type="text" class="form-control" @bind="@RDPforAdd.Password">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="rdpcomment" class="col-3 col-form-label">Комментарий</label>
+                        <div class="col">
+                            <textarea id="rdpcomment" name="text" type="text" class="form-control" @bind="@RDPforAdd.Comment" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @error
+                        </div>
+                    }
+                </ModalAddDialog>
+                <ModalAddDialog @ref="ipDialog" Title="Добавление IP адреса" OnClick="(()=>AddIP())">
+                    <div class="form-row">
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@ip1">
+                        </div>
+                        <span>.</span>
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@ip2">
+                        </div>
+                        <span>.</span>
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@ip3">
+                        </div>
+                        <span>.</span>
+                        <div class="form-group col">
+                            <input type="number" max="255" min="0" class="form-control" @bind="@ip4">
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @error
+                        </div>
+                    }
+                </ModalAddDialog>
+                <ModalWindow @ref="softsModal" Title="Редактирование установленного программного обеспечения" ModalButtonOK="Сохранить" OnClick="(() => SaveSofts())">
+                    <div class="form-group">
+                        <div style="overflow: auto; height:240px;">
+                            @foreach (var cat in SoftDict)
+                            {
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="@cat.Key" @bind="@SoftDict[cat.Key]" />
+                                    <label class="form-check-label" for="@cat.Key">@cat.Key</label>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </ModalWindow>
+            }
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа к этой странице</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [Parameter]
+    public int Id { get; set; }
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    Unit unit = new Unit();
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    ModalHistory modalHistory;
+    string forEdit = string.Empty;
+    int What = 0;
+    ModalWindow modal1;
+    string ModalTitle = "Редактирование";
+    ModalWindow selectModal;
+    int? selected;
+    string helptext = "Выберите";
+    Dictionary<int, string> SelectList = new Dictionary<int, string>();
+    List<Employer> employers = new List<Employer>();
+    List<UnitStatus> statuses = new List<UnitStatus>();
+    List<Departament> departaments = new List<Departament>();
+    List<WinName> winNames = new List<WinName>();
+    ModalWindow dateModal;
+    DateTime? Date = null;
+    ModalWindow textareaModal;
+    ModalWindow intModal;
+    ModalYesNoDialog modalYesNo;
+    ServiceWork SWforDel;
+    ServiceWork SWforAdd;
+    ModalAddDialog addSW;
+    string error = string.Empty;
+    ModalWindow softsModal;
+    Dictionary<string, bool> SoftDict;
+    int ip1 = 10;
+    int ip2 = 30;
+    int ip3 = 125;
+    int ip4 = 1;
+    ModalAddDialog ipDialog;
+    IPs IPforDel;
+    WinAccount WAforAdd;
+    WinAccount WAforDel;
+    ModalAddDialog addWA;
+    RdpConnect RDPforAdd;
+    RdpConnect RDPforDel;
+    int RDip1 = 192;
+    int RDip2 = 168;
+    int RDip3 = 0;
+    int RDip4 = 1;
+    ModalAddDialog addRDP;
+    string status;
+    StoredFile fileForDel;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetUnit();
+        CurrentUser = (await authenticationStateTask).User;
+        string unitname = unit == null ? "Ошибка" : "Карточка техники " + (!string.IsNullOrEmpty(unit.Model) ? unit.Model : unit.Id.ToString());
+        await HeadElementHelper.SetTitleAsync(unitname + " - Учет техники");
+    }
+
+    async Task GetUnit()
+    {
+        unit = await @Service.GetUnit(Id);
+    }
+
+    void ShowHistoryModal()
+    {
+        modalHistory.Show();
+    }
+
+    async void EditSofts()
+    {
+        SoftDict = await @Service.GetSoftDict();
+        foreach (var sf in unit.UnitInstalledSofts)
+        {
+            if (SoftDict.ContainsKey(sf.InstalledSoft.Name))
+                SoftDict[sf.InstalledSoft.Name] = true;
+        }
+        softsModal.Show();
+    }
+
+    void SaveSofts()
+    {
+        var result = @Service.EditSofts(SoftDict, unit.Id, CurrentUser.Identity.Name);
+        softsModal.Show();
+    }
+
+    void AddNewSW()
+    {
+        SWforAdd = new ServiceWork { UnitId = unit.Id, WorkDate = DateTime.Now };
+        error = string.Empty;
+        addSW.Show();
+    }
+
+    void AddNewWAcc()
+    {
+        WAforAdd = new WinAccount { UnitId = unit.Id };
+        error = string.Empty;
+        addWA.Show();
+    }
+
+    void AddNewRDP()
+    {
+        RDPforAdd = new RdpConnect { UnitId = unit.Id };
+        error = string.Empty;
+        RDip1 = 192;
+        RDip2 = 168;
+        RDip3 = 0;
+        RDip4 = 1;
+        addRDP.Show();
+    }
+
+    void AddNewIP()
+    {
+        ip1 = 10;
+        ip2 = 30;
+        ip3 = 125;
+        ip4 = 1;
+        ipDialog.Show();
+    }
+
+    void AddIP()
+    {
+        if (ip1 > 255) ip1 = 255;
+        if (ip2 > 255) ip2 = 255;
+        if (ip3 > 255) ip3 = 255;
+        if (ip4 > 255) ip4 = 255;
+        if (ip1 == 0) ip1 = 1;
+        if (ip2 == 0) ip2 = 1;
+        if (ip3 == 0) ip3 = 1;
+        if (ip4 == 0) ip4 = 1;
+        string ip = ip1 + "." + ip2 + "." + ip3 + "." + ip4;
+        var check = @Service.CheckIP(ip);
+        if (!check.Result)
+        {
+            error = "Этот IP адрес занят";
+            return;
+        }
+        var result = @Service.AddUnitIP(ip, unit.Id, CurrentUser.Identity.Name);
+        ipDialog.Show();
+    }
+
+    void AddRDP()
+    {
+        if (string.IsNullOrEmpty(RDPforAdd.Login) || string.IsNullOrEmpty(RDPforAdd.Password))
+        {
+            error = "Введите логин и пароль";
+            return;
+        }
+        error = string.Empty;
+        if (RDip1 > 255) RDip1 = 255;
+        if (RDip2 > 255) RDip2 = 255;
+        if (RDip3 > 255) RDip3 = 255;
+        if (RDip4 > 255) RDip4 = 255;
+        if (RDip1 == 0) RDip1 = 1;
+        if (RDip2 == 0) RDip2 = 1;
+        if (RDip3 == 0) RDip3 = 1;
+        if (RDip4 == 0) RDip4 = 1;
+        RDPforAdd.IPAddress = RDip1 + "." + RDip2 + "." + RDip3 + "." + RDip4;
+        var result = @Service.AddRDPAcc(RDPforAdd, CurrentUser.Identity.Name);
+        addRDP.Show();
+    }
+
+    void AddSW()
+    {
+        if (string.IsNullOrEmpty(SWforAdd.WorkDescr) || string.IsNullOrEmpty(SWforAdd.WorkName))
+        {
+            error = "Заполните название и описание";
+            return;
+        }
+        error = string.Empty;
+        var result = @Service.AddServiceWork(SWforAdd, CurrentUser.Identity.Name);
+        addSW.Show();
+    }
+
+    void AddWA()
+    {
+        if (string.IsNullOrEmpty(WAforAdd.Login))
+        {
+            error = "Введите логин";
+            return;
+        }
+        error = string.Empty;
+        var result = @Service.AddWinAcc(WAforAdd, CurrentUser.Identity.Name);
+        addWA.Show();
+    }
+
+    void DeleteSW(ServiceWork sw)
+    {
+        SWforDel = sw;
+        What = 1;
+        ModalTitle = $"Действительно хотите удалить ремонт {sw.WorkName}?";
+        modalYesNo.Show();
+    }
+
+    void DeleteF(StoredFile f)
+    {
+        fileForDel = f;
+        What = 5;
+        ModalTitle = $"Действительно хотите удалить файл {f.FileName}?";
+        modalYesNo.Show();
+    }
+
+    void DeleteWA(WinAccount acc)
+    {
+        WAforDel = acc;
+        What = 3;
+        ModalTitle = $"Действительно хотите удалить аккаунт {acc.Login}?";
+        modalYesNo.Show();
+    }
+
+    void DeleteRDP(RdpConnect acc)
+    {
+        RDPforDel = acc;
+        What = 4;
+        ModalTitle = $"Действительно хотите удалить RDP аккаунт {acc.IPAddress} : {acc.Login}?";
+        modalYesNo.Show();
+    }
+
+    void DeleteIP(IPs ip)
+    {
+        IPforDel = ip;
+        What = 2;
+        ModalTitle = $"Действительно хотите удалить IP адрес {ip.IPAddress}?";
+        modalYesNo.Show();
+    }
+
+    void Del(int what)
+    {
+        modalYesNo.Show();
+        int id = 0;
+        if (what == 1)
+        {
+            id = SWforDel.Id;
+        }
+        else if (what == 2)
+        {
+            id = IPforDel.Id;
+        }
+        else if (what == 3)
+        {
+            id = WAforDel.Id;
+        }
+        else if (what == 4)
+        {
+            id = RDPforDel.Id;
+        }
+        else if (what == 5)
+        {
+            id = fileForDel.Id;
+        }
+        var result = @Service.DeleteFromUnitView(what, id, CurrentUser.Identity.Name);
+        What = 0;
+    }
+
+    void EditDateInput(int what)
+    {
+        What = what;
+        Date = null;
+        if (what == 1)
+        {
+            Date = unit.BuyDate;
+            ModalTitle = "Редактирование даты приобретения";
+            dateModal.Show();
+        }
+        else if (what == 2)
+        {
+            Date = unit.InstallDate;
+            ModalTitle = "Редактирование даты установки";
+            dateModal.Show();
+        }
+    }
+
+    void SaveDateInputChanges()
+    {
+        if (What == 1)
+        {
+            if (Date == unit.BuyDate)
+            {
+                Date = null;
+                What = 0;
+                dateModal.Show();
+                return;
+            }
+        }
+        else if (What == 2)
+        {
+            if (Date == unit.InstallDate)
+            {
+                Date = null;
+                What = 0;
+                dateModal.Show();
+                return;
+            }
+        }
+        var result = @Service.EditUnitDateInput(What, Date, unit.Id, CurrentUser.Identity.Name);
+        Date = null;
+        What = 0;
+        dateModal.Show();
+    }
+
+    void EditIntInput()
+    {
+        selected = unit.CartridgeCount.HasValue ? unit.CartridgeCount.Value : 0;
+        intModal.Show();
+    }
+
+    void SaveIntInputChange()
+    {
+        if ((selected == 0 && unit.CartridgeCount == null) || selected == unit.CartridgeCount)
+        {
+            selected = 0;
+            intModal.Show();
+            return;
+        }
+        var result = @Service.EditUnitIntInput(selected.Value, unit.Id, CurrentUser.Identity.Name);
+        selected = 0;
+        intModal.Show();
+    }
+
+    async void EditSelectList(int what)
+    {
+        What = what;
+        SelectList = new Dictionary<int, string>();
+        if (what == 1)
+        {
+            selected = unit.ManufacturerId.HasValue ? unit.ManufacturerId.Value : 0;
+            ModalTitle = "Редактирование производителя";
+            helptext = "Выберите производителя";
+            foreach (var manuf in unit.Category.Manufacturers.OrderBy(x => x.Manufacturer.Name))
+            {
+                SelectList.Add(manuf.ManufacturerId, manuf.Manufacturer.Name);
+            }
+            selectModal.Show();
+        }
+        else if (what == 2)
+        {
+            selected = unit.EmployerId.HasValue ? unit.EmployerId.Value : 0;
+            ModalTitle = "Редактирование сотрудника";
+            helptext = "Выберите сотрудника";
+            SelectList.Add(0, "Не указан");
+            employers = await @Service.GetEmployersAdd();
+            foreach (var manuf in employers)
+            {
+                SelectList.Add(manuf.Id, manuf.Name);
+            }
+            selectModal.Show();
+        }
+        else if (what == 3)
+        {
+            selected = unit.UnitStatusId;
+            ModalTitle = "Редактирование статуса";
+            helptext = "Выберите статус";
+            statuses = await @Service.GetStatusesForAdd();
+            foreach (var manuf in statuses)
+            {
+                SelectList.Add(manuf.Id, manuf.Name);
+            }
+            selectModal.Show();
+        }
+        else if (what == 4)
+        {
+            selected = unit.DepartamentId.HasValue ? unit.DepartamentId.Value : 0;
+            ModalTitle = "Редактирование отдела";
+            helptext = "Выберите отдел";
+            SelectList.Add(0, "Не указан");
+            departaments = await @Service.GetDepartamentsAdd();
+            foreach (var manuf in departaments)
+            {
+                SelectList.Add(manuf.Id, manuf.Name);
+            }
+            selectModal.Show();
+        }
+        else if (what == 5)
+        {
+            selected = unit.WinNameId.HasValue ? unit.WinNameId.Value : 0;
+            ModalTitle = "Редактирование ОС";
+            helptext = "Выберите ОС";
+            SelectList.Add(0, "Не указана");
+            winNames = await @Service.GetWinNamesAdd();
+            foreach (var manuf in winNames)
+            {
+                SelectList.Add(manuf.Id, manuf.Name);
+            }
+            selectModal.Show();
+        }
+    }
+
+    void SaveSelectListChanges()
+    {
+        if (What == 1)
+        {
+            if ((selected == 0 && unit.ManufacturerId == null) || selected == unit.ManufacturerId)
+            {
+                selected = 0;
+                What = 0;
+                selectModal.Show();
+                return;
+            }
+        }
+        else if (What == 2)
+        {
+            if ((selected == 0 && unit.EmployerId == null) || selected == unit.EmployerId)
+            {
+                selected = 0;
+                What = 0;
+                selectModal.Show();
+                return;
+            }
+        }
+        else if (What == 3)
+        {
+            if (selected == unit.UnitStatusId)
+            {
+                selected = 0;
+                What = 0;
+                selectModal.Show();
+                return;
+            }
+        }
+        else if (What == 4)
+        {
+            if ((selected == 0 && unit.DepartamentId == null) || selected == unit.DepartamentId)
+            {
+                selected = 0;
+                What = 0;
+                selectModal.Show();
+                return;
+            }
+        }
+        else if (What == 5)
+        {
+            if ((selected == 0 && unit.WinNameId == null) || selected == unit.WinNameId)
+            {
+                selected = 0;
+                What = 0;
+                selectModal.Show();
+                return;
+            }
+        }
+        var result = @Service.EditUnitSelectList(What, selected.Value, unit.Id, CurrentUser.Identity.Name);
+        selected = 0;
+        What = 0;
+        selectModal.Show();
+    }
+
+    void EditTextarea(int what)
+    {
+        What = what;
+        if (what == 1)
+        {
+            forEdit = unit.Specs;
+            ModalTitle = "Редактирование характеристик";
+            textareaModal.Show();
+        }
+        else if (what == 2)
+        {
+            forEdit = unit.Comment;
+            ModalTitle = "Редактирование комментария";
+            textareaModal.Show();
+        }
+    }
+
+    void SaveTextareaChanges()
+    {
+        if (What == 1)
+        {
+            if (forEdit == unit.Specs)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                textareaModal.Show();
+                return;
+            }
+        }
+        else if (What == 2)
+        {
+            if (forEdit == unit.Comment)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                textareaModal.Show();
+                return;
+            }
+        }
+        var result = @Service.EditUnitTextarea(What, forEdit, unit.Id, CurrentUser.Identity.Name);
+        forEdit = string.Empty;
+        What = 0;
+        textareaModal.Show();
+    }
+
+    void EditOneInput(int what)
+    {
+        What = what;
+        if (what == 1)
+        {
+            forEdit = unit.Model;
+            ModalTitle = "Редактирование модели";
+            modal1.Show();
+        }
+        else if (what == 2)
+        {
+            forEdit = unit.Location;
+            ModalTitle = "Редактирование местоположения";
+            modal1.Show();
+        }
+        else if (what == 3)
+        {
+            forEdit = unit.InventId;
+            ModalTitle = "Редактирование инвентарного номера";
+            modal1.Show();
+        }
+        else if (what == 4)
+        {
+            forEdit = unit.Serial;
+            ModalTitle = "Редактирование серийного номера";
+            modal1.Show();
+        }
+        else if (what == 5)
+        {
+            forEdit = unit.Processor;
+            ModalTitle = "Редактирование процессора";
+            modal1.Show();
+        }
+        else if (what == 6)
+        {
+            forEdit = unit.Motherboard;
+            ModalTitle = "Редактирование материнской платы";
+            modal1.Show();
+        }
+        else if (what == 7)
+        {
+            forEdit = unit.DDR;
+            ModalTitle = "Редактирование оперативной памяти";
+            modal1.Show();
+        }
+        else if (what == 8)
+        {
+            forEdit = unit.CartridgeModel;
+            ModalTitle = "Редактирование модели картриджа";
+            modal1.Show();
+        }
+        else if (what == 9)
+        {
+            forEdit = unit.NetName;
+            ModalTitle = "Редактирование сетевого имени";
+            modal1.Show();
+        }
+        else if (what == 10)
+        {
+            forEdit = unit.BiosPass;
+            ModalTitle = "Редактирование пароля BIOS";
+            modal1.Show();
+        }
+    }
+
+    void SaveOneInputChanges()
+    {
+        if (What == 1)
+        {
+            if (forEdit == unit.Model)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 2)
+        {
+            if (forEdit == unit.Location)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 3)
+        {
+            if (forEdit == unit.InventId)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 4)
+        {
+            if (forEdit == unit.Serial)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 5)
+        {
+            if (forEdit == unit.Processor)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 6)
+        {
+            if (forEdit == unit.Motherboard)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 7)
+        {
+            if (forEdit == unit.DDR)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 8)
+        {
+            if (forEdit == unit.CartridgeModel)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 9)
+        {
+            if (forEdit == unit.NetName)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        else if (What == 10)
+        {
+            if (forEdit == unit.BiosPass)
+            {
+                forEdit = string.Empty;
+                What = 0;
+                modal1.Show();
+                return;
+            }
+        }
+        var result = @Service.EditUnitOneInput(What, forEdit, unit.Id, CurrentUser.Identity.Name);
+        forEdit = string.Empty;
+        What = 0;
+        modal1.Show();
+    }
+
+    async Task HandleSelection(IFileListEntry[] files)
+    {
+        var file = files.FirstOrDefault();
+        if (file != null)
+        {
+            var ms = new MemoryStream();
+            await file.Data.CopyToAsync(ms);
+            Service.AddFile(ms.ToArray(), file.Name, unit.Id, CurrentUser.Identity.Name);
+            status = $"Завершена загрузка файла {file.Name} ({file.Size} bytes)";
+        }
+    }
+
+    void DownloadFile(StoredFile file)
+    {
+        JS.SaveAs(file.FileName, file.Data);
+    }
+
+    async void Print()
+    {
+        string html = "<html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"description\" content=\"\"><meta name=\"author\" content=\"\"><title>Печать карточки</title></head><body style='tab-interval:35.4pt'><div><h2 style='line-height:200%'>Карточка техники</h2><table style='border-collapse:collapse;border:none'>";
+        string row = "<tr><td valign=top style='width:170pt;border-top:solid #7F7F7F 1.0pt;border-left:none;border-bottom:solid #7F7F7F 1.0pt;border-right:none;padding:8pt 5.4pt 8pt 5.4pt'><p><span style='font-size:16.0pt'>{0}</span></p></td><td valign=top style='width:600pt;border-top:solid #7F7F7F 1.0pt;border-left:none;border-bottom:solid #7F7F7F 1.0pt;border-right:none;padding:8pt 5.4pt 8pt 5.4pt'><p><b><span style='font-size:16.0pt'>{1}</span></b></p></td></tr>";
+        html += String.Format(row, "Тип техники", unit.Category.Name);
+        if (unit.Category.Manufacturer)
+            html += String.Format(row, "Производитель", unit.ManufacturerId != null ? unit.Manufacturer.Name : "Не указан");
+        if (unit.Category.Model)
+            html += String.Format(row, "Модель", !string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана");
+        html += String.Format(row, "Статус техники", unit.UnitStatus.Name);
+        if (unit.Category.Location)
+            html += String.Format(row, "Местоположение", !string.IsNullOrEmpty(unit.Location) ? unit.Location : "Не указано");
+        if (unit.Category.InventId)
+            html += String.Format(row, "Инвентарный номер", !string.IsNullOrEmpty(unit.InventId) ? unit.InventId : "Не указан");
+        if (unit.Category.Serial)
+            html += String.Format(row, "Серийный номер", !string.IsNullOrEmpty(unit.Serial) ? unit.Serial : "Не указан");
+        if (unit.Category.BuyDate)
+            html += String.Format(row, "Дата покупки", unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d") : "Не указана");
+        if (unit.Category.InstallDate)
+            html += String.Format(row, "Дата установки", unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d") : "Не указана");
+        if (unit.Category.Employer)
+            html += String.Format(row, "Сотрудник", unit.EmployerId != null ? unit.Employer.Name : "Не указан");
+        if (unit.Category.Departament)
+            html += String.Format(row, "Отдел", unit.DepartamentId != null ? unit.Departament.Name : "Не указан");
+        if (unit.Category.WinName)
+            html += String.Format(row, "Операционная система", unit.WinNameId != null ? unit.WinName.Name : "Не указана");
+        if (unit.Category.Processor)
+            html += String.Format(row, "Процессор", !string.IsNullOrEmpty(unit.Processor) ? unit.Processor : "Не указан");
+        if (unit.Category.Motherboard)
+            html += String.Format(row, "Материнская плата", !string.IsNullOrEmpty(unit.Motherboard) ? unit.Motherboard : "Не указана");
+        if (unit.Category.DDR)
+            html += String.Format(row, "Оперативная память", !string.IsNullOrEmpty(unit.DDR) ? unit.DDR : "Не указана");
+        if (unit.Category.Specs)
+            html += String.Format(row, "Характеристики", !string.IsNullOrEmpty(unit.Specs) ? unit.Specs : "Не указаны");
+        if (unit.Category.CartridgeModel)
+            html += String.Format(row, "Модель картриджа", !string.IsNullOrEmpty(unit.CartridgeModel) ? unit.CartridgeModel : "Не указана");
+        if (unit.Category.CartridgeCount)
+            html += String.Format(row, "Количество картриджей", unit.CartridgeCount != null ? unit.CartridgeCount.ToString() : "Не указано");
+        if (unit.Category.ServiceWorks && unit.ServiceWorks.Count > 0)
+            html += String.Format(row, "Ремонтные работы", string.Join("<br/>", unit.ServiceWorks.Select(x => x.WorkDate.ToString("d") + " " + x.WorkName + ". " + x.WorkDescr).ToArray()));
+        if (CurrentUser.IsInRole("Admin"))
+        {
+            if (unit.Category.InstaledSofts && unit.UnitInstalledSofts.Count() > 0)
+                html += String.Format(row, "Установленное ПО", string.Join("<br/>", unit.UnitInstalledSofts.Select(x => x.InstalledSoft.Name).ToArray()));
+            if (unit.Category.IPAdresses && unit.IPAdresses.Count > 0)
+                html += String.Format(row, "IP адреса", string.Join("<br/>", unit.IPAdresses.Select(x => x.IPAddress.ToString()).ToArray()));
+            if (unit.Category.NetName)
+                html += String.Format(row, "Сетевое имя", !string.IsNullOrEmpty(unit.NetName) ? unit.NetName : "Не указано");
+            if (unit.Category.BiosPass)
+                html += String.Format(row, "Пароль BIOS", !string.IsNullOrEmpty(unit.BiosPass) ? unit.BiosPass : "Не указан");
+            if (unit.Category.WinAccounts && unit.WinAccounts.Count > 0)
+                html += String.Format(row, "Аккаунты Windows", string.Join("<br/>", unit.WinAccounts.Select(x => "Логин: " + x.Login + "| Пароль: " + x.Password).ToArray()));
+            if (unit.Category.RdpConnects && unit.RdpConnects.Count > 0)
+                html += String.Format(row, "RDP аккаунты", string.Join("<br/>", unit.RdpConnects.Select(x => "Адрес: " + x.IPAddress + "| Логин: " + x.Login + "| Пароль: " + x.Password + "| Комментарий: " + x.Comment).ToArray()));
+            if (unit.Category.Comments)
+                html += String.Format(row, "Комментарии", !string.IsNullOrEmpty(unit.Comment) ? unit.Comment : "Не указаны");
+        }
+        html += "</table></div></body></html>";
+        await JS.InvokeVoidAsync("print", html);
+    }
+
+    public async Task<IEnumerable<KeyValuePair<int, string>>> SearchSL(string searchText)
+    {
+        var result = SelectList
+            .Where(x => x.Value.Contains(searchText, StringComparison.OrdinalIgnoreCase));
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertSL(KeyValuePair<int, string> sl)
+    {
+        return sl.Key;
+    }
+
+    public KeyValuePair<int, string> LookupSL(int? id)
+    {
+        return SelectList.FirstOrDefault(p => p.Key == id);
+    }
+}

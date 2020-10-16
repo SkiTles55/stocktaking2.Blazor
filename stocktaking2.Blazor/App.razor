@@ -1,0 +1,17 @@
+﻿<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)" />
+    </Found>
+    <NotFound>
+        <CascadingAuthenticationState>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <!-- 404 Error Text -->
+                <div class="text-center">
+                    <div class="error mx-auto" data-text="404">404</div>
+                    <p class="lead text-gray-800 mb-5">Страница Не Найдена</p>
+                    <a href="#">&larr; Назад на Главную страницу</a>
+                </div>
+            </LayoutView>
+        </CascadingAuthenticationState>
+    </NotFound>
+</Router>

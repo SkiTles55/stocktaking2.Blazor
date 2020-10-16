@@ -1,0 +1,39 @@
+﻿@page "/test"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using LoreSoft.Blazor.Controls
+@inherits OwningComponentBase<DbService>
+<Typeahead SearchMethod="@SearchDep"
+           Items="departamentsAdd"
+           Placeholder="State"
+           @bind-Value="SelectedDep">
+    <SelectedTemplate Context="state">
+        @state.Name
+    </SelectedTemplate>
+    <ResultTemplate Context="state">
+        @state.Name
+    </ResultTemplate>
+</Typeahead>
+@code {
+    public Departament SelectedDep { get; set; }
+    List<Departament> departamentsAdd;
+
+    protected override async Task OnInitializedAsync()
+    {
+        departamentsAdd = await @Service.GetDepartamentsAdd();
+    }
+
+    public Task<IEnumerable<Departament>> SearchDep(string searchText)
+    {
+        var result = departamentsAdd
+            .Where(x => x.Name.ToLower().Contains(searchText.ToLower()))
+            .ToList();
+
+        return Task.FromResult<IEnumerable<Departament>>(result);
+    }
+
+    public void DepFilter(Departament dep)
+    {
+
+    }
+}

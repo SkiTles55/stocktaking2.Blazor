@@ -1,0 +1,585 @@
+﻿@page "/administration/categories"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using System.Security.Claims
+@using stocktaking2.Blazor.Helpers
+@using Microsoft.AspNetCore.Identity;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> _UserManager
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        @if (@context.User.IsInRole("Admin"))
+        {
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Типы техники</h1>
+                <ul class="nav justify-content-end">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/administration/categories" @onclick="AddNewCat"><i class="fas fa-plus fa-sm"></i> Добавить тип техники</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/administration/categories" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
+                    </li>
+                </ul>
+            </div>
+            @if (catPaging.Categories == null)
+            {
+                <p><em>Данные загружаются...</em></p>
+            }
+            else
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="DataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th><a href="administration/categories/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 1 ? 2 : 1))"><i class="@SortClass(1, 2)"></i> Название</a></th>
+                                        <th><a href="administration/categories/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> Количество техники</a></th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var one in catPaging.Categories)
+                                    {
+                                        <tr>
+                                            <td>@one.Name</td>
+                                            <td>@one.Units.Count</td>
+                                            <td>
+                                                <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditCat(one))">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteCat(one))">
+                                                    <i class="far fa-trash-alt"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <div class="d-sm-flex align-items-center justify-content-between">
+                                <p>Всего типов: @catPaging.TotalCount</p>
+                                @if (catPaging.TotalPages > 1)
+                                {
+                                    <ul class="pagination">
+                                        @if (HasPrevious())
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(currentPage - 1))">&laquo;  Назад</button>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">&laquo;  Назад</a>
+                                            </li>
+                                        }
+                                        @if (Start > 1)
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(1))">1</button>
+                                            </li>
+                                        }
+                                        @if (Start > 2)
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">...</a>
+                                            </li>
+                                        }
+                                        @for (var i = Start; i <= Finish; i++)
+                                        {
+                                            var temp = i;
+                                            if (i == currentPage)
+                                            {
+                                                <li class="page-item active">
+                                                    <span class="page-link">
+                                                        @i
+                                                        <span class="sr-only">(current)</span>
+                                                    </span>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="(()=>SetPage(temp))">@i</button>
+                                                </li>
+                                            }
+                                        }
+                                        @if (Finish < catPaging.TotalPages)
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">...</a>
+                                            </li>
+                                        }
+                                        @if (Finish < catPaging.TotalPages)
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(catPaging.TotalPages))">@catPaging.TotalPages</button>
+                                            </li>
+                                        }
+                                        @if (HasNext())
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(currentPage + 1))">Вперед  &raquo;</button>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">Вперед  &raquo;</a>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="@ModalButton" OnClick="(() => SaveCat())">
+                    <div class="form-group">
+                        <input class="form-control" type="text" placeholder="Название" @bind="ct.Name" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="form-group">
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-circle"></i> @error
+                            </div>
+                        </div>
+                    }
+                    <div class="form-group">
+                        <h4>Типы данных</h4>
+                    </div>
+                    <div class="form-group">
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Manufacturer" @bind="@ct.Manufacturer" />
+                                    <label class="form-check-label" for="Manufacturer">
+                                        Производитель
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Model" @bind="@ct.Model" />
+                                    <label class="form-check-label" for="Model">
+                                        Модель
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Location" @bind="@ct.Location" />
+                                    <label class="form-check-label" for="Location">
+                                        Местоположение
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="InventId" @bind="@ct.InventId" />
+                                    <label class="form-check-label" for="InventId">
+                                        Инвентарный номер
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Serial" @bind="@ct.Serial" />
+                                    <label class="form-check-label" for="Serial">
+                                        Серийный номер
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="BuyDate" @bind="@ct.BuyDate" />
+                                    <label class="form-check-label" for="BuyDate">
+                                        Дата приобретения
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="InstallDate" @bind="@ct.InstallDate" />
+                                    <label class="form-check-label" for="InstallDate">
+                                        Дата установки
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Employer" @bind="@ct.Employer" />
+                                    <label class="form-check-label" for="Employer">
+                                        Сотрудник
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Departament" @bind="@ct.Departament" />
+                                    <label class="form-check-label" for="Departament">
+                                        Отдел
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="WinName" @bind="@ct.WinName" />
+                                    <label class="form-check-label" for="WinName">
+                                        Операционная система
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Processor" @bind="@ct.Processor" />
+                                    <label class="form-check-label" for="Processor">
+                                        Процессор
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Motherboard" @bind="@ct.Motherboard" />
+                                    <label class="form-check-label" for="Motherboard">
+                                        Материнская плата
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="DDR" @bind="@ct.DDR" />
+                                    <label class="form-check-label" for="DDR">
+                                        Оперативная память
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Specs" @bind="@ct.Specs" />
+                                    <label class="form-check-label" for="Specs">
+                                        Характеристики (одно поле)
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="CartridgeModel" @bind="@ct.CartridgeModel" />
+                                    <label class="form-check-label" for="CartridgeModel">
+                                        Модель картриджа
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="CartridgeCount" @bind="@ct.CartridgeCount" />
+                                    <label class="form-check-label" for="CartridgeCount">
+                                        Количество картриджей
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="StoredFiles" @bind="@ct.StoredFiles" />
+                                    <label class="form-check-label" for="StoredFiles">
+                                        Файлы
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="ServiceWorks" @bind="@ct.ServiceWorks" />
+                                    <label class="form-check-label" for="ServiceWorks">
+                                        Ремонтные работы
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="InstaledSofts" @bind="@ct.InstaledSofts" />
+                                    <label class="form-check-label" for="InstaledSofts">
+                                        Установленное ПО
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="IPAdresses" @bind="@ct.IPAdresses" />
+                                    <label class="form-check-label" for="IPAdresses">
+                                        IP адреса
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="NetName" @bind="@ct.NetName" />
+                                    <label class="form-check-label" for="NetName">
+                                        Сетевое имя
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="BiosPass" @bind="@ct.BiosPass" />
+                                    <label class="form-check-label" for="BiosPass">
+                                        Пароль BIOS
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="WinAccounts" @bind="@ct.WinAccounts" />
+                                    <label class="form-check-label" for="WinAccounts">
+                                        Аккаунты Windows
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="RdpConnects" @bind="@ct.RdpConnects" />
+                                    <label class="form-check-label" for="RdpConnects">
+                                        Аккаунты RDP
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="Comments" @bind="@ct.Comments" />
+                                    <label class="form-check-label" for="Comments">
+                                        Комментарий
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </ModalWindow>
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+                    <div class="form-group">
+                        <p>Действительно хотите удалить этот тип техники?</p>
+                        <h3>@forDel.Name</h3>
+                    </div>
+                    @if (forDel.Units.Count > 0)
+                    {
+                        @if (!string.IsNullOrEmpty(error))
+                        {
+                            <div class="form-group">
+                                <div class="alert alert-danger" role="alert">
+                                    <i class="fas fa-exclamation-circle"></i> @error
+                                </div>
+                            </div>
+                        }
+                        <div class="form-group">
+                            <p style="color:red">В базе имеется техника этого типа.</p>
+                        </div>
+                        <div class="form-group">
+                            <select class="form-control form-control-user" @bind="@newcat">
+                                <option value="0" selected="selected" hidden="hidden">Выберите новый тип</option>
+                                @foreach (var option in categoriesAdd)
+                                {
+                                    if (option.Id != forDel.Id)
+                                    {
+                                        <option value="@option.Id">
+                                            @option.Name
+                                        </option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    }
+                </ModalYesNoDialog>
+                <ModalHistory @ref="modalHistory">
+                    <div style="overflow: auto; height:500px;">
+                        @if (categoryHistories == null)
+                        {
+                            <p>Данные загружаются...</p>
+                        }
+                        else
+                        {
+                            @foreach (var cH in categoryHistories)
+                            {
+                                <div class="alert alert-secondary" role="alert">
+                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                    <p>Пользователь: <b>@cH.UserName</b></p>
+                                    <p class="font-weight-bold">@cH.Changes</p>
+                                </div>
+                            }
+                        }
+                    </div>
+                </ModalHistory>
+            }
+        }
+        else
+        {
+            <p>У вас нет доступа в этот раздел</p>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    CatPaging catPaging;
+    List<Category> categoriesAdd;
+    List<CategoryHistory> categoryHistories = new List<CategoryHistory>();
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    string ModalTitle = "Редактирование типа";
+    string ModalButton = "Сохранить";
+    Category ct = new Category();
+    Category forDel = new Category();
+    ModalWindow modal1;
+    ModalYesNoDialog modalYesNo;
+    ModalHistory modalHistory;
+    int newcat = 0;
+    string error = string.Empty;
+    UserSettings userSettings;
+    int currentPage = 1;
+    int VisiblePages = 5;
+    int Start;
+    int Finish;
+    int currentSort = 1;
+    int pageSize;
+
+    private bool HasPrevious()
+    {
+        return currentPage > 1 && catPaging.TotalPages > 1;
+    }
+    private bool HasNext()
+    {
+        return currentPage < catPaging.TotalPages;
+    }
+
+    void CalcPages()
+    {
+        VisiblePages = 5;
+        var half = (int)Math.Floor(VisiblePages / 2d);
+        Start = Math.Max(currentPage - half, 1);
+        Finish = Math.Min(currentPage + half, catPaging.TotalPages);
+        VisiblePages = Math.Min(VisiblePages, catPaging.TotalPages);
+        if (Start == 1)
+        { Finish = VisiblePages; }
+        if (Finish >= catPaging.TotalPages)
+        { Start = catPaging.TotalPages - VisiblePages; }
+        if (Start < 1)
+        { Start = 1; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = (await authenticationStateTask).User;
+        await GetData();
+        await HeadElementHelper.SetTitleAsync("Типы техники - Учет техники");
+    }
+
+    public async Task GetData()
+    {
+        userSettings = await @Service.GetSettings(_UserManager.GetUserId(CurrentUser), CurrentUser.IsInRole("Admin"));
+        pageSize = userSettings.RowsCount;
+        categoriesAdd = await @Service.GetCategoriesAdd();
+        GetCats();
+    }
+
+    void GetCats()
+    {
+        catPaging = @Service.catPaging(currentSort, currentPage, pageSize);
+        CalcPages();
+    }
+
+    public void SetPage(int page)
+    {
+        currentPage = page;
+        GetCats();
+    }
+
+    void AddNewCat()
+    {
+        ModalTitle = "Добавление типа техники";
+        ModalButton = "Добавить";
+        error = string.Empty;
+        ct = new Category { Id = 0 };
+        modal1.Show();
+    }
+
+    void EditCat(Category cat)
+    {
+        ModalTitle = "Редактирование типа техники";
+        ModalButton = "Сохранить";
+        error = string.Empty;
+        ct = new Category
+        {
+            BiosPass = cat.BiosPass,
+            BuyDate = cat.BuyDate,
+            CartridgeCount = cat.CartridgeCount,
+            CartridgeModel = cat.CartridgeModel,
+            Comments = cat.Comments,
+            DDR = cat.DDR,
+            Departament = cat.Departament,
+            Employer = cat.Employer,
+            Id = cat.Id,
+            InstallDate = cat.InstallDate,
+            InventId = cat.InventId,
+            IPAdresses = cat.IPAdresses,
+            Location = cat.Location,
+            Manufacturer = cat.Manufacturer,
+            Model = cat.Model,
+            Motherboard = cat.Motherboard,
+            Name = cat.Name,
+            NetName = cat.NetName,
+            Processor = cat.Processor,
+            RdpConnects = cat.RdpConnects,
+            Serial = cat.Serial,
+            ServiceWorks = cat.ServiceWorks,
+            Specs = cat.Specs,
+            WinAccounts = cat.WinAccounts,
+            WinName = cat.WinName,
+            StoredFiles = cat.StoredFiles,
+            InstaledSofts = cat.InstaledSofts
+        };
+        modal1.Show();
+    }
+
+    void SaveCat()
+    {
+        if (string.IsNullOrEmpty(ct.Name))
+        {
+            error = "Название не может быть пустым";
+            return;
+        }
+        var check = @Service.CheckCatName(ct.Name, ct.Id);
+        if (!check.Result)
+        {
+            error = "Такой тип техники уже присутствует в базе";
+            return;
+        }
+        if (ct.BiosPass == false && ct.BuyDate == false && ct.CartridgeCount == false && ct.CartridgeModel == false &&
+            ct.Comments == false && ct.DDR == false && ct.Departament == false && ct.Employer == false && ct.InstaledSofts == false &&
+            ct.InstallDate == false && ct.InventId == false && ct.IPAdresses == false && ct.Location == false && ct.Manufacturer == false &&
+            ct.Model == false && ct.Motherboard == false && ct.NetName == false && ct.Processor == false && ct.RdpConnects == false &&
+            ct.Serial == false && ct.ServiceWorks == false && ct.Specs == false && ct.StoredFiles == false &&
+            ct.WinAccounts == false && ct.WinName == false)
+        {
+            error = "Необходимо выбрать типы данных";
+            return;
+        }
+        if (ct.Id == 0)
+        {
+            var result = @Service.CreateCategory(ct, CurrentUser.Identity.Name);
+        }
+        else
+        {
+            var result = @Service.EditCategory(ct, CurrentUser.Identity.Name);
+        }
+        error = string.Empty;
+        modal1.Show();
+        GetCats();
+    }
+
+    void DeleteCat(Category cat)
+    {
+        forDel = cat;
+        error = string.Empty;
+        modalYesNo.Show();
+    }
+
+    void Del()
+    {
+        if (forDel.Units.Count > 0 && newcat == 0)
+        {
+            error = "Выберите новый тип для привязанной техники из списка ниже";
+            return;
+        }
+        var result = @Service.DeleteCat(forDel, CurrentUser.Identity.Name, newcat);
+        error = string.Empty;
+        modalYesNo.Show();
+        forDel = null;
+        newcat = 0;
+        GetCats();
+    }
+
+    async void ShowHistoryModal()
+    {
+        categoryHistories = await @Service.GetCategoryHistories();
+        modalHistory.Show();
+    }
+
+    void SetSort(int sort)
+    {
+        currentSort = sort;
+        currentPage = 1;
+        GetCats();
+    }
+
+    string SortClass(int sort1, int sort2)
+    {
+        if (currentSort == sort1)
+        {
+            return "fas fa-sort-up";
+        }
+        else if (currentSort == sort2)
+        {
+            return "fas fa-sort-down";
+        }
+        else
+        {
+            return "fas fa-sort";
+        }
+    }
+}

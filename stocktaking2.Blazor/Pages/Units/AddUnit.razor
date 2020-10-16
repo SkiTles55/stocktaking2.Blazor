@@ -1,0 +1,967 @@
+﻿@page "/units/add"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using stocktaking2.Blazor.Helpers
+@using System.Security.Claims
+@using LoreSoft.Blazor.Controls
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        @if (@context.User.IsInRole("Admin"))
+        {
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Добавление техники</h1>
+            </div>
+            <div class="row">
+                <div class="col-xl-8 col-lg-7">
+                    <div class="card shadow mb-4 border-left-primary">
+                        <div class="card-body">
+                            <div class="form-group row">
+                                <label for="UnitCategory" class="col-3 col-form-label">Тип техники</label>
+                                <div class="col">
+                                    <Typeahead SearchMethod="SearchCat"
+                                               ConvertMethod="ConvertCat"
+                                               Items="categories"
+                                               @bind-Value="newUnit.CategoryId"
+                                               Placeholder="Выберите тип техники"
+                                               SearchPlaceholder="Поиск">
+                                        <SelectedTemplate Context="catId">
+                                            @LookupCat(catId).Name
+                                        </SelectedTemplate>
+                                        <ResultTemplate Context="cat">
+                                            @cat.Name
+                                        </ResultTemplate>
+                                    </Typeahead>
+                                </div>
+                            </div>
+                            @if (newUnit.CategoryId.HasValue)
+                            {
+                                @if (Selected().Manufacturer)
+                                {
+                                    <div class="form-group row">
+                                        <label for="text1" class="col-3 col-form-label">Производитель</label>
+                                        <div class="col">
+                                            <Typeahead SearchMethod="SearchMan"
+                                                       ConvertMethod="ConvertMan"
+                                                       Items="Manufacturers(newUnit.CategoryId.Value)"
+                                                       @bind-Value="newUnit.ManufacturerId"
+                                                       Placeholder="Выберите производителя"
+                                                       SearchPlaceholder="Поиск">
+                                                <SelectedTemplate Context="manId">
+                                                    @LookupMan(manId)?.Name
+                                                </SelectedTemplate>
+                                                <ResultTemplate Context="man">
+                                                    @man.Name
+                                                </ResultTemplate>
+                                            </Typeahead>
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Model)
+                                {
+                                    <div class="form-group row">
+                                        <label for="model" class="col-3 col-form-label">Модель</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="model" placeholder="Модель" @bind="@newUnit.Model">
+                                        </div>
+                                    </div>
+                                }
+                                <div class="form-group row">
+                                    <label for="status" class="col-3 col-form-label">Статус</label>
+                                    <div class="col">
+                                        <Typeahead SearchMethod="SearchStatus"
+                                                   ConvertMethod="ConvertStatus"
+                                                   Items="statuses"
+                                                   @bind-Value="newUnit.UnitStatusId"
+                                                   Placeholder="Выберите статус"
+                                                   SearchPlaceholder="Поиск">
+                                            <SelectedTemplate Context="statusId">
+                                                @LookupStatus(statusId)?.Name
+                                            </SelectedTemplate>
+                                            <ResultTemplate Context="status">
+                                                @status.Name
+                                            </ResultTemplate>
+                                        </Typeahead>
+                                    </div>
+                                </div>
+                                @if (Selected().Location)
+                                {
+                                    <div class="form-group row">
+                                        <label for="location" class="col-3 col-form-label">Местоположение</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="location" placeholder="Местоположение" @bind="@newUnit.Location">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().InventId)
+                                {
+                                    <div class="form-group row">
+                                        <label for="invent" class="col-3 col-form-label">Инвентарный номер</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="invent" placeholder="Инвентарный номер" @bind="@newUnit.InventId">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Serial)
+                                {
+                                    <div class="form-group row">
+                                        <label for="serial" class="col-3 col-form-label">Серийный номер</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="serial" placeholder="Серийный номер" @bind="@newUnit.Serial">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().BuyDate)
+                                {
+                                    <div class="form-group row">
+                                        <label for="buydate" class="col-3 col-form-label">Дата приобретения</label>
+                                        <div class="col">
+                                            <input type="date" class="form-control" id="buydate" @bind="@newUnit.BuyDate">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().InstallDate)
+                                {
+                                    <div class="form-group row">
+                                        <label for="installdate" class="col-3 col-form-label">Дата установки</label>
+                                        <div class="col">
+                                            <input type="date" class="form-control" id="installdate" @bind="@newUnit.InstallDate">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Employer)
+                                {
+                                    <div class="form-group row">
+                                        <label for="empl" class="col-3 col-form-label">Сотрудник</label>
+                                        <div class="col">
+                                            <Typeahead SearchMethod="SearchEmp"
+                                                       ConvertMethod="ConvertEmp"
+                                                       Items="employers"
+                                                       @bind-Value="newUnit.EmployerId"
+                                                       Placeholder="Выберите сотрудника"
+                                                       SearchPlaceholder="Поиск">
+                                                <SelectedTemplate Context="empId">
+                                                    @LookupEmp(empId)?.Name
+                                                </SelectedTemplate>
+                                                <ResultTemplate Context="emp">
+                                                    @emp.Name
+                                                </ResultTemplate>
+                                            </Typeahead>
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Departament)
+                                {
+                                    <div class="form-group row">
+                                        <label for="deps" class="col-3 col-form-label">Отдел</label>
+                                        <div class="col">
+                                            @if (newUnit.EmployerId == null || newUnit.EmployerId == 0)
+                                            {
+                                                <Typeahead SearchMethod="SearchDep"
+                                                           ConvertMethod="ConvertDep"
+                                                           Items="departaments"
+                                                           @bind-Value="newUnit.DepartamentId"
+                                                           Placeholder="Выберите отдел"
+                                                           SearchPlaceholder="Поиск">
+                                                    <SelectedTemplate Context="depId">
+                                                        @LookupDep(depId)?.Name
+                                                    </SelectedTemplate>
+                                                    <ResultTemplate Context="dep">
+                                                        @dep.Name
+                                                    </ResultTemplate>
+                                                </Typeahead>
+                                            }
+                                            else
+                                            {
+                                                <input type="text" readonly class="form-control-plaintext" id="deps" value="@GetDepFromEmployer(newUnit.EmployerId.Value)">
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().WinName)
+                                {
+                                    <div class="form-group row">
+                                        <label for="winname" class="col-3 col-form-label">Операционная система</label>
+                                        <div class="col">
+                                            <Typeahead SearchMethod="SearchWin"
+                                                       ConvertMethod="ConvertWin"
+                                                       Items="winnames"
+                                                       @bind-Value="newUnit.WinNameId"
+                                                       Placeholder="Выберите операционную систему"
+                                                       SearchPlaceholder="Поиск">
+                                                <SelectedTemplate Context="winId">
+                                                    @LookupWin(winId)?.Name
+                                                </SelectedTemplate>
+                                                <ResultTemplate Context="win">
+                                                    @win.Name
+                                                </ResultTemplate>
+                                            </Typeahead>
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Processor)
+                                {
+                                    <div class="form-group row">
+                                        <label for="proc" class="col-3 col-form-label">Процессор</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="proc" placeholder="Процессор" @bind="@newUnit.Processor">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Motherboard)
+                                {
+                                    <div class="form-group row">
+                                        <label for="motherboard" class="col-3 col-form-label">Материнская плата</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="motherboard" placeholder="Материнская плата" @bind="@newUnit.Motherboard">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().DDR)
+                                {
+                                    <div class="form-group row">
+                                        <label for="ddr" class="col-3 col-form-label">Оперативная память</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="ddr" placeholder="Оперативная память" @bind="@newUnit.DDR">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().Specs)
+                                {
+                                    <div class="form-group row">
+                                        <label for="specs" class="col-3 col-form-label">Характеристики</label>
+                                        <div class="col">
+                                            <textarea type="text" class="form-control" id="specs" placeholder="Характеристики" @bind="@newUnit.Specs" />
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().CartridgeModel)
+                                {
+                                    <div class="form-group row">
+                                        <label for="CartridgeModel" class="col-3 col-form-label">Модель картриджа</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="CartridgeModel" placeholder="Модель картриджа" @bind="@newUnit.CartridgeModel">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().CartridgeCount)
+                                {
+                                    <div class="form-group row">
+                                        <label for="CartridgeCount" class="col-3 col-form-label">Количество картриджей</label>
+                                        <div class="col">
+                                            <input type="number" class="form-control" id="CartridgeCount" placeholder="Количество картриджей" @bind="@newUnit.CartridgeCount">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().ServiceWorks)
+                                {
+                                    <div class="form-group row">
+                                        <label class="col-3 col-form-label">Ремонтные работы</label>
+                                        <div class="col">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddSWModal())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (newUnit.ServiceWorks.Count > 0)
+                                    {
+                                        <div class="form-group row">
+                                            <label class="col-3 col-form-label"></label>
+                                            <div class="col">
+                                                <table class="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Название</th>
+                                                            <th>Описание</th>
+                                                            <th>Дата</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    @foreach (var SW in newUnit.ServiceWorks)
+                                                    {
+                                                        <tr>
+                                                            <td>@SW.WorkName</td>
+                                                            <td>@SW.WorkDescr</td>
+                                                            <td>@SW.WorkDate.ToString("d")</td>
+                                                            <td>
+                                                                <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="@(() => DelSW(SW))">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                @if (Selected().InstaledSofts)
+                                {
+                                    <div class="form-group row">
+                                        <label class="col-3">Установленное ПО</label>
+                                        <div class="col">
+                                            @foreach (var cat in newUnit.Soft)
+                                            {
+                                                <div class="form-check form-check-inline">
+                                                    <input class="form-check-input" type="checkbox" id="@cat.Key" @bind="@newUnit.Soft[cat.Key]" />
+                                                    <label class="form-check-label" for="@cat.Key">@cat.Key</label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().IPAdresses)
+                                {
+                                    <div class="form-group row">
+                                        <label for="text1" class="col-3 col-form-label">IP адреса</label>
+                                        <div class="col">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddIPModal())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (newUnit.IPaddresses.Count > 0)
+                                    {
+                                        <div class="form-group row">
+                                            <label class="col-3 col-form-label"></label>
+                                            <div class="col">
+                                                <table class="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>IP адреса</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    @foreach (var ip in newUnit.IPaddresses)
+                                                    {
+                                                        <tr>
+                                                            <td>@ip</td>
+                                                            <td>
+                                                                <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="@(() => DelIP(ip))">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                @if (Selected().NetName)
+                                {
+                                    <div class="form-group row">
+                                        <label for="NetName" class="col-3 col-form-label">Сетевое имя</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="NetName" placeholder="Сетевое имя" @bind="@newUnit.NetName">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().BiosPass)
+                                {
+                                    <div class="form-group row">
+                                        <label for="BiosPass" class="col-3 col-form-label">Пароль BIOS</label>
+                                        <div class="col">
+                                            <input type="text" class="form-control" id="BiosPass" placeholder="Пароль BIOS" @bind="@newUnit.BiosPass">
+                                        </div>
+                                    </div>
+                                }
+                                @if (Selected().WinAccounts)
+                                {
+                                    <div class="form-group row">
+                                        <label class="col-3 col-form-label">Аккаунты Windows</label>
+                                        <div class="col">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddWAModal())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (newUnit.WinAccounts.Count > 0)
+                                    {
+                                        <div class="form-group row">
+                                            <label class="col-3 col-form-label"></label>
+                                            <div class="col">
+                                                <table class="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Логин</th>
+                                                            <th>Пароль</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    @foreach (var WA in newUnit.WinAccounts)
+                                                    {
+                                                        <tr>
+                                                            <td>@WA.Key</td>
+                                                            <td>@WA.Value</td>
+                                                            <td>
+                                                                <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="@(() => DelWA(WA.Key))">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                @if (Selected().RdpConnects)
+                                {
+                                    <div class="form-group row">
+                                        <label class="col-3 col-form-label">RDP аккаунты</label>
+                                        <div class="col">
+                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddRDPModal())">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    @if (newUnit.RDPAccounts.Count > 0)
+                                    {
+                                        <div class="form-group row">
+                                            <label class="col-3 col-form-label"></label>
+                                            <div class="col">
+                                                <table class="table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Логин</th>
+                                                            <th>Пароль</th>
+                                                            <th>IP адрес</th>
+                                                            <th>Комментарий</th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </thead>
+                                                    @foreach (var WA in newUnit.RDPAccounts)
+                                                    {
+                                                        <tr>
+                                                            <td>@WA.Login</td>
+                                                            <td>@WA.Password</td>
+                                                            <td>@WA.IPAddress</td>
+                                                            <td>@WA.Comment</td>
+                                                            <td>
+                                                                <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="@(() => DelRDPA(WA))">
+                                                                    <i class="fas fa-trash"></i>
+                                                                </button>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                </table>
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                                @if (Selected().Comments)
+                                {
+                                    <div class="form-group row">
+                                        <label for="comments" class="col-3 col-form-label">Комментарий</label>
+                                        <div class="col">
+                                            <textarea type="text" class="form-control" id="comments" placeholder="Комментарии" @bind="@newUnit.Comment" />
+                                        </div>
+                                    </div>
+                                }
+                                <div class="form-group row">
+                                    <div class="offset-3 col">
+                                        @if (!string.IsNullOrEmpty(Adderror))
+                                        {
+                                            <div class="alert alert-danger" role="alert">
+                                                <i class="fas fa-exclamation-circle"></i> @Adderror
+                                            </div>
+                                        }
+                                        <button class="btn btn-primary btn-icon-split" @onclick="SaveUnit">
+                                            <span class="icon text-white-50">
+                                                <i class="far fa-save"></i>
+                                            </span>
+                                            <span class="text">Сохранить</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ModalAddDialog @ref="swaddModal" Title="Добавление ремонта" OnClick="AddSW">
+                <div class="form-group row">
+                    <label for="wdate" class="col-3 col-form-label">Дата</label>
+                    <div class="col">
+                        <input id="wdate" name="text" type="date" class="form-control" @bind="@work.WorkDate">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="workname" class="col-3 col-form-label">Название</label>
+                    <div class="col">
+                        <input id="workname" name="text" type="text" class="form-control" @bind="@work.WorkName">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="workdescr" class="col-3 col-form-label">Описание</label>
+                    <div class="col">
+                        <input id="workdescr" name="text" type="text" class="form-control" @bind="@work.WorkDescr">
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(SWerror))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> @SWerror
+                    </div>
+                }
+            </ModalAddDialog>
+            <ModalAddDialog @ref="ipaddModal" Title="Добавление IP адреса" OnClick="AddIP">
+                <div class="form-row">
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@ip1">
+                    </div>
+                    <span>.</span>
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@ip2">
+                    </div>
+                    <span>.</span>
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@ip3">
+                    </div>
+                    <span>.</span>
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@ip4">
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(IPError))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> @IPError
+                    </div>
+                }
+            </ModalAddDialog>
+            <ModalAddDialog @ref="waaddModal" Title="Добавление аккаунта Windows" OnClick="AddWA">
+                <div class="form-group row">
+                    <label for="winlogin" class="col-3 col-form-label">Логин</label>
+                    <div class="col">
+                        <input id="winlogin" name="text" type="text" class="form-control" @bind="@Login">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="winpass" class="col-3 col-form-label">Пароль</label>
+                    <div class="col">
+                        <input id="winpass" name="text" type="text" class="form-control" @bind="@Pass">
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(WAerror))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> @WAerror
+                    </div>
+                }
+            </ModalAddDialog>
+            <ModalAddDialog @ref="rdpaddModal" Title="Добавление RDP аккаунта" OnClick="AddRDPA">
+                <label class="col">IP адрес</label>
+                <div class="form-row">
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@RDip1">
+                    </div>
+                    <span>.</span>
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@RDip2">
+                    </div>
+                    <span>.</span>
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@RDip3">
+                    </div>
+                    <span>.</span>
+                    <div class="form-group col">
+                        <input type="number" max="255" min="0" class="form-control" @bind="@RDip4">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="rdplogin" class="col-3 col-form-label">Логин</label>
+                    <div class="col">
+                        <input id="rdplogin" name="text" type="text" class="form-control" @bind="@account.Login">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="rdppass" class="col-3 col-form-label">Пароль</label>
+                    <div class="col">
+                        <input id="rdppass" name="text" type="text" class="form-control" @bind="@account.Password">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="rdpcomment" class="col-3 col-form-label">Комментарий</label>
+                    <div class="col">
+                        <textarea id="rdpcomment" name="text" type="text" class="form-control" @bind="@account.Comment" />
+                    </div>
+                </div>
+                @if (!string.IsNullOrEmpty(RDerror))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fas fa-exclamation-circle"></i> @RDerror
+                    </div>
+                }
+            </ModalAddDialog>
+        }
+        else
+        {
+            <p>У вас нет доступа в этот раздел</p>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    UnitForm newUnit = new UnitForm { Id = 0 };
+    List<Category> categories = new List<Category>();
+    List<UnitStatus> statuses = new List<UnitStatus>();
+    List<Employer> employers = new List<Employer>();
+    List<Departament> departaments = new List<Departament>();
+    List<WinName> winnames = new List<WinName>();
+    Dictionary<string, bool> Soft = new Dictionary<string, bool>();
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    int ip1 = 10;
+    int ip2 = 30;
+    int ip3 = 125;
+    int ip4 = 1;
+    int RDip1 = 192;
+    int RDip2 = 168;
+    int RDip3 = 0;
+    int RDip4 = 1;
+    string Login = string.Empty;
+    string Pass = string.Empty;
+    SWAdd work = new SWAdd { WorkDate = DateTime.Now };
+    RDPAcc account = new RDPAcc();
+    string SWerror = string.Empty;
+    string WAerror = string.Empty;
+    string RDerror = string.Empty;
+    string Adderror = string.Empty;
+    string IPError = string.Empty;
+    ModalAddDialog swaddModal;
+    ModalAddDialog ipaddModal;
+    ModalAddDialog waaddModal;
+    ModalAddDialog rdpaddModal;
+
+    public Category Selected()
+    {
+        return categories.Where(x => x.Id == newUnit.CategoryId).FirstOrDefault();
+    }
+
+    void AddSWModal()
+    {
+        swaddModal.Show();
+    }
+
+    void AddIPModal()
+    {
+        ipaddModal.Show();
+    }
+
+    void AddWAModal()
+    {
+        waaddModal.Show();
+    }
+
+    void AddRDPModal()
+    {
+        rdpaddModal.Show();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetData();
+        newUnit.Soft = Soft;
+        newUnit.IPaddresses = new List<string>();
+        newUnit.WinAccounts = new Dictionary<string, string>();
+        newUnit.RDPAccounts = new List<RDPAcc>();
+        newUnit.ServiceWorks = new List<SWAdd>();
+        CurrentUser = (await authenticationStateTask).User;
+        await HeadElementHelper.SetTitleAsync("Добавление техники - Учет техники");
+    }
+
+    public async Task GetData()
+    {
+        categories = await @Service.CategoriesList();
+        statuses = await @Service.GetStatusesForAdd();
+        employers = await @Service.GetEmployersAdd();
+        departaments = await @Service.GetDepartamentsAdd();
+        winnames = await @Service.GetWinNamesAdd();
+        Soft = await @Service.GetSoftDict();
+    }
+
+    public List<Manufacturer> Manufacturers(int categoryId)
+    {
+        if (newUnit.ManufacturerId.HasValue && !Service.CheckMan(newUnit.ManufacturerId.Value, categoryId))
+        {
+            newUnit.ManufacturerId = null;
+        }
+        return Service.Manufacturers(categoryId);
+    }
+
+    void SaveUnit()
+    {
+        if (!newUnit.UnitStatusId.HasValue || newUnit.UnitStatusId.Value == 0)
+        {
+            Adderror = "Выберите статус техники";
+            return;
+        }
+        var result = @Service.CreateUnit(newUnit, CurrentUser.Identity.Name);
+        if (result.Result > 0)
+        {
+            var url = "/unit/" + result.Result;
+            NavigationManager.NavigateTo(url);
+        }
+        else
+        {
+            Adderror = result.Exception.Message;
+            return;
+        }
+    }
+
+    public string GetDepFromEmployer(int empId)
+    {
+        var emp = employers.Where(x => x.Id == empId).FirstOrDefault();
+        if (emp != null)
+        {
+            return departaments.Where(x => x.Id == emp.DepartamentId).FirstOrDefault().Name;
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    void AddIP()
+    {
+        if (ip1 > 255) ip1 = 255;
+        if (ip2 > 255) ip2 = 255;
+        if (ip3 > 255) ip3 = 255;
+        if (ip4 > 255) ip4 = 255;
+        if (ip1 == 0) ip1 = 1;
+        if (ip2 == 0) ip2 = 1;
+        if (ip3 == 0) ip3 = 1;
+        if (ip4 == 0) ip4 = 1;
+        string ip = ip1 + "." + ip2 + "." + ip3 + "." + ip4;
+        if (newUnit.IPaddresses.Contains(ip))
+        {
+            IPError = "Этот IP адрес уже добавлен";
+            return;
+        }
+        var result = @Service.CheckIP(ip);
+        if (!result.Result)
+        {
+            IPError = "Этот IP адрес занят";
+            return;
+        }
+        newUnit.IPaddresses.Add(ip);
+        ip1 = 10;
+        ip2 = 30;
+        ip3 = 125;
+        ip4 = 1;
+        IPError = string.Empty;
+        ipaddModal.Show();
+    }
+
+    void DelIP(string ip)
+    {
+        if (newUnit.IPaddresses.Contains(ip))
+        {
+            newUnit.IPaddresses.Remove(ip);
+        }
+    }
+
+    void AddSW()
+    {
+        if (string.IsNullOrEmpty(work.WorkDescr) || string.IsNullOrEmpty(work.WorkName))
+        {
+            SWerror = "Заполните название и описание";
+            return;
+        }
+        SWerror = string.Empty;
+        newUnit.ServiceWorks.Add(work);
+        work = new SWAdd { WorkDate = DateTime.Now };
+        swaddModal.Show();
+    }
+
+    void DelSW(SWAdd work)
+    {
+        if (newUnit.ServiceWorks.Contains(work))
+        {
+            newUnit.ServiceWorks.Remove(work);
+        }
+    }
+
+    void AddWA()
+    {
+        if (string.IsNullOrEmpty(Login))
+        {
+            WAerror = "Введите логин";
+            return;
+        }
+        WAerror = string.Empty;
+        newUnit.WinAccounts.Add(Login, Pass);
+        Login = string.Empty;
+        Pass = string.Empty;
+        waaddModal.Show();
+    }
+
+    void DelWA(string key)
+    {
+        if (newUnit.WinAccounts.ContainsKey(key))
+        {
+            newUnit.WinAccounts.Remove(key);
+        }
+    }
+
+    void AddRDPA()
+    {
+        if (string.IsNullOrEmpty(account.Login))
+        {
+            RDerror = "Введите логин";
+            return;
+        }
+        if (string.IsNullOrEmpty(account.Password))
+        {
+            RDerror = "Введите пароль";
+            return;
+        }
+        RDerror = string.Empty;
+        if (RDip1 > 255) RDip1 = 255;
+        if (RDip2 > 255) RDip2 = 255;
+        if (RDip3 > 255) RDip3 = 255;
+        if (RDip4 > 255) RDip4 = 255;
+        if (RDip1 == 0) RDip1 = 1;
+        if (RDip2 == 0) RDip2 = 1;
+        if (RDip3 == 0) RDip3 = 1;
+        if (RDip4 == 0) RDip4 = 1;
+        account.IPAddress = RDip1 + "." + RDip2 + "." + RDip3 + "." + RDip4;
+        newUnit.RDPAccounts.Add(account);
+        account = new RDPAcc();
+        RDip1 = 192;
+        RDip2 = 168;
+        RDip3 = 0;
+        RDip4 = 1;
+        rdpaddModal.Show();
+    }
+
+    void DelRDPA(RDPAcc key)
+    {
+        if (newUnit.RDPAccounts.Contains(key))
+        {
+            newUnit.RDPAccounts.Remove(key);
+        }
+    }
+
+    public async Task<IEnumerable<Category>> SearchCat(string searchText)
+    {
+        var result = categories
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertCat(Category cat)
+    {
+        return cat?.Id;
+    }
+
+    public Category LookupCat(int? id)
+    {
+        return categories.FirstOrDefault(p => p.Id == id);
+    }
+
+    public async Task<IEnumerable<Manufacturer>> SearchMan(string searchText)
+    {
+        var result = Manufacturers(newUnit.CategoryId.Value)
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertMan(Manufacturer man)
+    {
+        return man?.Id;
+    }
+
+    public Manufacturer LookupMan(int? id)
+    {
+        return Manufacturers(newUnit.CategoryId.Value).FirstOrDefault(p => p.Id == id);
+    }
+
+    public async Task<IEnumerable<UnitStatus>> SearchStatus(string searchText)
+    {
+        var result = statuses
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertStatus(UnitStatus status)
+    {
+        return status?.Id;
+    }
+
+    public UnitStatus LookupStatus(int? id)
+    {
+        return statuses.FirstOrDefault(p => p.Id == id);
+    }
+
+    public async Task<IEnumerable<Employer>> SearchEmp(string searchText)
+    {
+        var result = employers
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertEmp(Employer emp)
+    {
+        return emp?.Id;
+    }
+
+    public Employer LookupEmp(int? id)
+    {
+        return employers.FirstOrDefault(p => p.Id == id);
+    }
+
+    public async Task<IEnumerable<Departament>> SearchDep(string searchText)
+    {
+        var result = departaments
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertDep(Departament dep)
+    {
+        return dep?.Id;
+    }
+
+    public Departament LookupDep(int? id)
+    {
+        return departaments.FirstOrDefault(p => p.Id == id);
+    }
+
+    public async Task<IEnumerable<WinName>> SearchWin(string searchText)
+    {
+        var result = winnames
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int? ConvertWin(WinName win)
+    {
+        return win?.Id;
+    }
+
+    public WinName LookupWin(int? id)
+    {
+        return winnames.FirstOrDefault(p => p.Id == id);
+    }
+}

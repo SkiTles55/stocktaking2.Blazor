@@ -1,0 +1,39 @@
+﻿@if (_Show)
+{
+    <div class="modal fade show" id="myModal" style=" display: block;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger btn-icon-split" @onclick="OnClick">
+                        <span class="icon text-white-50">
+                            <i class="far fa-check-circle"></i>
+                        </span>
+                        <span class="text">Да</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-icon-split" @onclick="Show">
+                        <span class="icon text-white-50">
+                            <i class="fas fa-ban"></i>
+                        </span>
+                        <span class="text">Нет</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+@code {
+    private Boolean _Show { get; set; }
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+    [Parameter]
+    public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    public void Show()
+    {
+        _Show = !_Show;
+    }
+}

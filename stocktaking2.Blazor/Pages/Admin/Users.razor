@@ -1,0 +1,353 @@
+﻿@page "/administration/users"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using Microsoft.AspNetCore.Identity;
+@using System.Security.Claims
+@using System.ComponentModel.DataAnnotations;
+@inject UserManager<IdentityUser> _UserManager
+@inject RoleManager<IdentityRole> _RoleManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        @if (@context.User.IsInRole("Admin"))
+        {
+            <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                <h1 class="h3 mb-0 text-gray-800">Пользователи</h1>
+                <ul class="nav justify-content-end">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/administration/users" @onclick="AddNewUser"><i class="fas fa-plus fa-sm"></i> Добавить пользователя</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/administration/users" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
+                    </li>
+                </ul>
+            </div>
+            @if (ColUsers == null)
+            {
+                <p><em>Данные загружаются...</em></p>
+            }
+            else
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered" id="DataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var one in ColUsers)
+                                    {
+                                        <tr>
+                                            <td>@one.Email</td>
+                                            <td>
+                                                <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditUser(one))">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-secondary btn-circle" title="Изменить пароль" @onclick="(() => ChangePass(one))">
+                                                    <i class="fas fa-key"></i>
+                                                </button>
+                                                <a class="btn btn-info btn-circle" title="История активности" href="/activity/@one.Email">
+                                                    <i class="fas fa-list"></i>
+                                                </a>
+                                                <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteUser(one))">
+                                                    <i class="far fa-trash-alt"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="@ModalButton" OnClick="(() => SaveUser())">
+                    <div class="form-group">
+                        <input class="form-control form-control-user" type="text" placeholder="Email" @bind="ct.Email" />
+                    </div>
+                    @if (ct.Id == "")
+                    {
+                        <div class="form-group">
+                            <input class="form-control form-control-user" type="password" placeholder="Пароль" @bind="ct.PasswordHash" />
+                        </div>
+                    }
+                    <div class="form-group">
+                        <select class="form-control form-control-user" @bind="@CurrentUserRole">
+                            @foreach (var option in Options)
+                            {
+                                <option value="@option">
+                                    @option
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="form-group">
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-circle"></i> @error
+                            </div>
+                        </div>
+                    }
+                </ModalWindow>
+                <ModalWindow @ref="changePass" Title="Изменение пароля" ModalButtonOK="Сменить" OnClick="(() => ChangePassword())">
+                    <div class="form-group">
+                        <input class="form-control form-control-user" type="password" placeholder="Новый пароль" @bind="NewPass" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="form-group">
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-circle"></i> @error
+                            </div>
+                        </div>
+                    }
+                </ModalWindow>
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+                    <div class="form-group">
+                        <p>Действительно хотите удалить этого пользователя?</p>
+                        <h3>@forDel.Email</h3>
+                    </div>
+                </ModalYesNoDialog>
+                <ModalHistory @ref="modalHistory">
+                    <div style="overflow: auto; max-height:500px;">
+                        @if (userHistories == null)
+                        {
+                            <p>Данные загружаются...</p>
+                        }
+                        else
+                        {
+                            @foreach (var cH in userHistories)
+                            {
+                                <div class="alert alert-secondary" role="alert">
+                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                    <p>Пользователь: <b>@cH.UserName</b></p>
+                                    <p class="font-weight-bold">@cH.Changes</p>
+                                </div>
+                            }
+                        }
+                    </div>
+                </ModalHistory>
+            }
+        }
+        else
+        {
+            <p>У вас нет доступа в этот раздел</p>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    List<IdentityUser> ColUsers = new List<IdentityUser>();
+    List<UserHistory> userHistories = new List<UserHistory>();
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    string ModalTitle = "Редактирование ОС";
+    string ModalButton = "Сохранить";
+    IdentityUser ct = new IdentityUser();
+    IdentityUser forDel = new IdentityUser();
+    ModalWindow modal1;
+    ModalWindow changePass;
+    ModalYesNoDialog modalYesNo;
+    ModalHistory modalHistory;
+    string NewPass = string.Empty;
+    string error = string.Empty;
+    string CurrentUserRole { get; set; } = "Users";
+    List<string> Options = new List<string>() { "Users", "Admin" };
+    string quote = "\"";
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetUsers();
+        CurrentUser = (await authenticationStateTask).User;
+        await HeadElementHelper.SetTitleAsync("Пользователи - Учет техники");
+    }
+
+    public void GetUsers()
+    {
+        ColUsers = _UserManager.Users.ToList();
+    }
+
+    void AddNewUser()
+    {
+        ModalTitle = "Добавление пользователя";
+        ModalButton = "Добавить";
+        error = string.Empty;
+        ct = new IdentityUser { Id = "" };
+        modal1.Show();
+    }
+
+    void EditUser(IdentityUser cat)
+    {
+        ModalTitle = "Редактирование ОС";
+        ModalButton = "Сохранить";
+        error = string.Empty;
+        ct = new IdentityUser
+        {
+            Id = cat.Id,
+            Email = cat.Email
+        };
+        modal1.Show();
+    }
+
+    async Task SaveUser()
+    {
+        try
+        {
+            if (ct.Id != "")
+            {
+                var user = await _UserManager.FindByIdAsync(ct.Id);
+                string Changes = string.Empty;
+                if (user.Email != ct.Email)
+                {
+                    Changes = $"Пользователю {quote}{user.Email}{quote} изменен Email на {quote}{ct.Email}{quote}.";
+                    user.Email = ct.Email;
+                    user.UserName = ct.Email;
+                    await _UserManager.UpdateAsync(user);
+                }
+                var UserResult = await _UserManager.IsInRoleAsync(user, "Admin");
+                if ((CurrentUserRole == "Admin") & (!UserResult))
+                {
+                    await _UserManager.AddToRoleAsync(user, "Admin");
+                    Changes += $" Пользователь {quote}{user.Email}{quote} добавлен в группу {quote}Администраторы{quote}.";
+                }
+                else
+                {
+                    if ((CurrentUserRole != "Admin") & (UserResult))
+                    {
+                        await _UserManager.RemoveFromRoleAsync(user, "Admin");
+                        Changes += $" Пользователь {quote}{user.Email}{quote} добавлен в группу {quote}Пользователи{quote}.";
+                    }
+                }
+                if (!string.IsNullOrEmpty(Changes))
+                {
+                    var result = @Service.AddUserHistoryAsync(Changes, CurrentUser.Identity.Name);
+                }
+            }
+            else
+            {
+                var foo = new EmailAddressAttribute();
+                if (!foo.IsValid(ct.Email))
+                {
+                    error = "Введен неправильный Email";
+                    return;
+                }
+                var NewUser = new IdentityUser { UserName = ct.Email, Email = ct.Email };
+                var CreateResult = await _UserManager.CreateAsync(NewUser, ct.PasswordHash);
+                if (!CreateResult.Succeeded)
+                {
+                    if (CreateResult.Errors.FirstOrDefault() != null)
+                    {
+                        error = CreateResult.Errors.FirstOrDefault().Description;
+                    }
+                    else
+                    {
+                        error = "Create error";
+                    }
+                    return;
+                }
+                else
+                {
+                    string Result = $"Добавлен новый пользователь {quote}{NewUser.Email}{quote}";
+                    if (CurrentUserRole == "Admin")
+                    {
+                        await _UserManager.AddToRoleAsync(NewUser, "Admin");
+                        Result += $" (группа {quote}Администраторы{quote})";
+                    }
+                    Result += ".";
+                    var result = @Service.AddUserHistoryAsync(Result, CurrentUser.Identity.Name);
+                }
+            }
+            error = string.Empty;
+            modal1.Show();
+            GetUsers();
+        }
+        catch (Exception ex)
+        {
+            error = ex.GetBaseException().Message;
+            return;
+        }
+    }
+
+    void DeleteUser(IdentityUser cat)
+    {
+        forDel = cat;
+        error = string.Empty;
+        modalYesNo.Show();
+    }
+
+    async Task Del()
+    {
+        var user = await _UserManager.FindByIdAsync(forDel.Id);
+        if (user != null)
+        {
+            var result = @Service.AddUserHistoryAsync($"Пользователь {quote}{forDel}{quote} удален.", CurrentUser.Identity.Name);
+            await _UserManager.DeleteAsync(user);
+        }
+        error = string.Empty;
+        modalYesNo.Show();
+        forDel = null;
+        GetUsers();
+    }
+
+    async void ShowHistoryModal()
+    {
+        userHistories = await @Service.GetUserHistoriesAsync();
+        modalHistory.Show();
+    }
+
+    async Task ChangePass(IdentityUser _IdentityUser)
+    {
+        ct = _IdentityUser;
+        var user = await _UserManager.FindByIdAsync(ct.Id);
+        if (user != null)
+        {
+
+            error = string.Empty;
+            NewPass = string.Empty;
+            changePass.Show();
+        }
+    }
+
+    async Task ChangePassword()
+    {
+        try
+        {
+            var resetToken = await _UserManager.GeneratePasswordResetTokenAsync(ct);
+            var passworduser = await _UserManager.ResetPasswordAsync(ct, resetToken, NewPass);
+            if (!passworduser.Succeeded)
+            {
+                if (passworduser.Errors.FirstOrDefault() != null)
+                {
+                    error = passworduser.Errors.FirstOrDefault().Description;
+                }
+                else
+                {
+                    error = "Pasword error";
+                }
+                return;
+            }
+            else
+            {
+                var result = @Service.AddUserHistoryAsync($"Пользователю {quote}{ct.Email}{quote} изменен пароль.", CurrentUser.Identity.Name);
+                error = string.Empty;
+                NewPass = string.Empty;
+                changePass.Show();
+                ct = new IdentityUser();
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.GetBaseException().Message;
+            return;
+        }
+    }
+}

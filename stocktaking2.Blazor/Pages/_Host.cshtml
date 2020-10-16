@@ -1,0 +1,61 @@
+﻿@page "/{**path}"
+@namespace stocktaking2.Blazor.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>Учет техники</title>
+    <base href="~/" />
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <link href="css/sb-admin-2.css" rel="stylesheet">
+    <script src="_content/BlazorDateRangePicker/clickAndPositionHandler.js"></script>
+    <link rel="stylesheet" href="_content/BlazorDateRangePicker/daterangepicker.min.css" />
+    <link rel="stylesheet" href="~/css/LoreSoftBlazorControls.css" />
+</head>
+<body id="page-top">
+    <app>
+        @(await Html.RenderComponentAsync<App>(RenderMode.ServerPrerendered))
+    </app>
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="_framework/blazor.server.js"></script>
+    <!-- Reference the included moment.js javascript file. -->
+    <script src="_content/ChartJs.Blazor/moment-with-locales.min.js" type="text/javascript" language="javascript"></script>
+    <!-- Reference the included ChartJs javascript file. -->
+    <script src="_content/ChartJs.Blazor/Chart.min.js" type="text/javascript" language="javascript"></script>
+    <!-- This is the glue between the C# code and the ChartJs charts -->
+    <script src="_content/ChartJs.Blazor/ChartJsBlazorInterop.js" type="text/javascript" language="javascript"></script>
+    <!-- Some styling -->
+    <link rel="stylesheet" href="_content/ChartJs.Blazor/ChartJSBlazor.css" />
+    <script src="js/sb-admin-2.min.js"></script>
+    <script src="_content/BlazorInputFile/inputfile.js"></script>
+    <script src="_content/LoreSoft.Blazor.Controls/BlazorControls.js"></script>
+    <script type="text/javascript">
+        function saveAsFile(filename, bytesBase64) {
+            var link = document.createElement('a');
+            link.download = filename;
+            link.href = "data:application/octet-stream;base64," + bytesBase64;
+            document.body.appendChild(link); // Needed for Firefox
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+    <script type="text/javascript">
+        function print(html) {
+            var page = window.open();
+            page.document.write(html);
+            page.document.close(); // necessary for IE >= 10
+            page.focus(); // necessary for IE >= 10*/
+            page.print();
+        }
+    </script>
+</body>
+</html>

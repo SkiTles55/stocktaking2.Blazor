@@ -1,0 +1,119 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using stocktaking2.Blazor.Data
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        @if (@context.User.IsInRole("Admin"))
+        {
+            <div class="d-none d-sm-inline-block form-inline ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                <div class="input-group">
+                    <button class="btn btn-primary btn-icon-split" style="margin-bottom:0px;" @onclick="Show">
+                        <span class="text">Поиск по IP адресу</span>
+                        <span class="icon">
+                            <i class="fas fa-search fa-sm"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+            @if (_Show)
+            {
+                <div class="modal fade show" id="myModal" style=" display: block;">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLabel">Поиск по IP адресу</h5>
+                                <button type="button" class="close" data-dismiss="modal" @onclick="Show">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-row">
+                                    <div class="form-group col">
+                                        <input type="number" max="255" min="0" class="form-control" @bind="@ip1">
+                                    </div>
+                                    <span>.</span>
+                                    <div class="form-group col">
+                                        <input type="number" max="255" min="0" class="form-control" @bind="@ip2">
+                                    </div>
+                                    <span>.</span>
+                                    <div class="form-group col">
+                                        <input type="number" max="255" min="0" class="form-control" @bind="@ip3">
+                                    </div>
+                                    <span>.</span>
+                                    <div class="form-group col">
+                                        <input type="number" max="255" min="0" class="form-control" @bind="@ip4">
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(error))
+                                {
+                                    <div class="alert alert-danger" role="alert">
+                                        <i class="fas fa-exclamation-circle"></i> @error
+                                    </div>
+                                }
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary btn-icon-split" @onclick="@SearchIP">
+                                    <span class="icon text-white-50">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <span class="text">Поиск</span>
+                                </button>
+                                <button class="btn btn-secondary btn-icon-split" @onclick="Show">
+                                    <span class="icon text-white-50">
+                                        <i class="far fa-window-close"></i>
+                                    </span>
+                                    <span class="text">Отмена</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-backdrop fade show"></div>
+            }
+        }
+    </Authorized>
+</AuthorizeView>
+@code {
+    private Boolean _Show { get; set; }
+
+    int ip1 = 10;
+    int ip2 = 30;
+    int ip3 = 125;
+    int ip4 = 1;
+
+    string error = string.Empty;
+
+    public void Show()
+    {
+        _Show = !_Show;
+    }
+
+    void SearchIP()
+    {
+        if (ip1 > 255) ip1 = 255;
+        if (ip2 > 255) ip2 = 255;
+        if (ip3 > 255) ip3 = 255;
+        if (ip4 > 255) ip4 = 255;
+        if (ip1 == 0) ip1 = 1;
+        if (ip2 == 0) ip2 = 1;
+        if (ip3 == 0) ip3 = 1;
+        if (ip4 == 0) ip4 = 1;
+        string ip = ip1 + "." + ip2 + "." + ip3 + "." + ip4;
+        var result = @Service.FindIP(ip);
+        if (result.Result == 0)
+        {
+            error = "Техника с таким IP адресом не найдена";
+            return;
+        }
+        else
+        {
+            error = string.Empty;
+            ip1 = 10;
+            ip2 = 30;
+            ip3 = 125;
+            ip4 = 1;
+            Show();
+            NavigationManager.NavigateTo("unit/" + result.Result, true);
+        }
+    }
+}

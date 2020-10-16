@@ -1,0 +1,40 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+<AuthorizeView>
+    <Authorized>
+        <li class="nav-item dropdown no-arrow">
+            <a class="nav-link dropdown-toggle" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="@NavigationManager.Uri">
+                <span class="mr-2 d-none d-lg-inline text-gray-600 small">Привет, @context.User.Identity.Name!</span>
+                <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                <a class="dropdown-item" href="/password">
+                    <i class="fas fa-key fa-sm fa-fw mr-2 text-gray-400"></i>
+                    Сменить пароль
+                </a>
+                <a class="dropdown-item" href="/activity">
+                    <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
+                    История активности
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="@NavigationManager.Uri" data-toggle="modal" data-target="#logoutModal">
+                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                    Выход
+                </a>
+            </div>
+        </li>
+    </Authorized>
+</AuthorizeView>
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
+        {
+            NavigationManager.NavigateTo("Identity/Account/Login");
+        }
+    }
+}

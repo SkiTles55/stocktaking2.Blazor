@@ -1,0 +1,413 @@
+﻿@page "/activity/{user}"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Helpers
+@using Microsoft.AspNetCore.Identity
+@using BlazorDateRangePicker
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> _UserManager
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        @if (@context.User.IsInRole("Admin"))
+        {
+            @if (CurrentUser == null)
+            {
+                <p><em>Ошибка. Пользователь @User не найден.</em></p>
+            }
+            else
+            {
+                <div class="d-sm-flex align-items-center justify-content-between mb-4">
+                    <h1 class="h3 mb-0 text-gray-800">История активности пользователя @User</h1>
+                    <div class="col-xl-3 col-md-6">
+                        <DateRangePicker MinDate="DateTimeOffset.Now.AddYears(-10)" MaxDate="DateTimeOffset.Now.AddDays(1)" class="form-control form-control-sm" @bind-StartDate="StartDate" @bind-EndDate="EndDate" ApplyLabel="Показать" CancelLabel="Отмена" OnRangeSelect="OnRangeSelect" Opens="SideType.Left" Ranges="DateRanges" CustomRangeLabel="Выбрать промежуток времени" AlwaysShowCalendars="true">
+                            <PickerTemplate Context="ct">
+                                <div id="@ct.ParentId" @onclick="ct.Toggle" class="form-control form-control-sm">
+                                    <i class="far fa-calendar-alt"></i>&nbsp;
+                                    <span>@ct.FormattedRange @(string.IsNullOrEmpty(ct.FormattedRange) ? "Выберите промежуток..." : "")</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                            </PickerTemplate>
+                        </DateRangePicker>
+                    </div>
+                </div>
+                <div class="row">
+                    @if (activityLog.UnitLogs.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Техника</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Техника</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.UnitLogs)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td><a href="/unit/@ul.UnitId" class="text-decoration-none">@(string.IsNullOrEmpty(ul.UnitModel) ? "Модель не указана" : ul.UnitModel)</a></td>
+                                                        <td>@ul.Change</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.unitStatusHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Статусы техники</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.unitStatusHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.userHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Пользователи</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.userHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.employerHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Сотрудники</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.employerHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.departamentHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Отделы</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.departamentHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.categoryHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Типы техники</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.categoryHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.emailHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Аккаунты Email</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.emailHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.installedSoftHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Программное обеспечение</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.installedSoftHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.manufacturerHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Производители</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.manufacturerHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (activityLog.winNameHistories.Count > 0)
+                    {
+                        <div class="col-12">
+                            <div class="card shadow mb-4 border-left-primary">
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h5 class="m-0 font-weight-bold text-primary">Операционные системы</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Дата/Время</th>
+                                                    <th>Изменения</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var ul in activityLog.winNameHistories)
+                                                {
+                                                    <tr>
+                                                        <td>@ul.Time.ToString()</td>
+                                                        <td>@ul.Changes</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <p>У вас нет доступа в этот раздел</p>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [Parameter]
+    public string User { get; set; }
+    IdentityUser CurrentUser;
+    ActivityLog activityLog;
+    DateTimeOffset? StartDate = DateTime.Now - TimeSpan.FromDays(2);
+    DateTimeOffset? EndDate = DateTime.Now;
+
+    Dictionary<string, DateRange> DateRanges => new Dictionary<string, DateRange> {
+    { "Сегодня", new DateRange
+        {
+            Start = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day) - TimeSpan.FromDays(1),
+            End = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day)
+        }
+    },
+    { "3 дня", new DateRange
+        {
+            Start = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day) - TimeSpan.FromDays(3),
+            End = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day)
+        }
+    },
+    { "Неделя", new DateRange
+        {
+            Start = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day) - TimeSpan.FromDays(7),
+            End = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day)
+        }
+    },
+    { "Месяц", new DateRange
+        {
+            Start = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day) - TimeSpan.FromDays(31),
+            End = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day)
+        }
+    }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = await _UserManager.FindByEmailAsync(User);
+        if (CurrentUser != null)
+        {
+            GetActivity();
+        }
+        await HeadElementHelper.SetTitleAsync(CurrentUser != null ? "История активности пользователя " + User + " - Учет техники" : "Ошибка - Учет техники");
+    }
+
+    async void GetActivity()
+    {
+        activityLog = await @Service.GetUserActivityRange(CurrentUser.Email, StartDate.Value.DateTime, EndDate.Value.DateTime);
+    }
+
+    void OnRangeSelect(DateRange range)
+    {
+        GetActivity();
+    }
+}

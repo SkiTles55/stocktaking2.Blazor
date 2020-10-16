@@ -1,0 +1,443 @@
+﻿@page "/search/{text}"
+@using Microsoft.AspNetCore.Components.Authorization
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using stocktaking2.Blazor.Helpers
+@using Microsoft.AspNetCore.Identity;
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> _UserManager
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 text-gray-800">Результаты поиска @(quote + text + quote)</h1>
+        </div>
+        @if (unitsPaging.Units == null)
+        {
+            <p><em>Данные загружаются...</em></p>
+        }
+        else
+        {
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-body">
+                    <div class="row">
+                        @if (unitsPaging.TotalCount > 0)
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-bordered" id="DataTable" width="100%" cellspacing="0">
+                                    <thead>
+                                        <tr>
+                                            @for (int i = 1; i < 14; i++)
+                                            {
+                                                @switch (tableCollumns[i])
+                                                {
+                                                    case "category":
+                                                        <th>
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> Тип</a>
+                                                            <select class="form-control form-control-sm" @onchange="@CatFilter">
+                                                                <option value="0" selected="selected">Все</option>
+                                                                @foreach (var option in categories)
+                                                                {
+                                                                    <option value="@option.Id">
+                                                                        @option.Name
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                        </th>
+                                                        break;
+                                                    case "departament":
+                                                        <th>
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 5 ? 6 : 5))"><i class="@SortClass(5, 6)"></i> Отдел</a>
+                                                            <select class="form-control form-control-sm" @onchange="@DepFilter">
+                                                                <option value="0" selected="selected">Все</option>
+                                                                @foreach (var option in departaments)
+                                                                {
+                                                                    <option value="@option.Id">
+                                                                        @option.Name
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                        </th>
+                                                        break;
+                                                    case "employer":
+                                                        <th>
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> Сотрудник</a>
+                                                            <select class="form-control form-control-sm" @onchange="@EmpFilter">
+                                                                <option value="0" selected="selected">Все</option>
+                                                                @foreach (var option in employers.Where(x => depFilter == 0 ? true : x.DepartamentId == depFilter))
+                                                                {
+                                                                    <option value="@option.Id">
+                                                                        @option.Name
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                        </th>
+                                                        break;
+                                                    case "installdate":
+                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 9 ? 10 : 9))"><i class="@SortClass(9, 10)"></i> Дата установки</a></th>
+                                                        break;
+                                                    case "invent":
+                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 11 ? 12 : 11))"><i class="@SortClass(11, 12)"></i> Инвентарный номер</a></th>
+                                                        break;
+                                                    case "ip":
+                                                        if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 27 ? 28 : 27))"><i class="@SortClass(27, 28)"></i> IP адреса</a></th>
+                                                        }
+                                                        break;
+                                                    case "location":
+                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 13 ? 14 : 13))"><i class="@SortClass(13, 14)"></i> Местоположение</a></th>
+                                                        break;
+                                                    case "man":
+                                                        <th>
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 15 ? 16 : 15))"><i class="@SortClass(15, 16)"></i> Производитель</a>
+                                                            <select class="form-control form-control-sm" @onchange="@ManFilter">
+                                                                <option value="0" selected="selected">Все</option>
+                                                                @foreach (var option in manufacturers)
+                                                                {
+                                                                    <option value="@option.Id">
+                                                                        @option.Name
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                        </th>
+                                                        break;
+                                                    case "model":
+                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 17 ? 18 : 17))"><i class="@SortClass(17, 18)"></i> Модель</a></th>
+                                                        break;
+                                                    case "netname":
+                                                        if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 19 ? 20 : 19))"><i class="@SortClass(19, 20)"></i> Сетевое имя</a></th>
+                                                        }
+                                                        break;
+                                                    case "serial":
+                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 21 ? 22 : 21))"><i class="@SortClass(21, 22)"></i> Серийный номер</a></th>
+                                                        break;
+                                                    case "specs":
+                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 23 ? 24 : 23))"><i class="@SortClass(23, 24)"></i> Характеристики</a></th>
+                                                        break;
+                                                    case "status":
+                                                        <th>
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 25 ? 26 : 25))"><i class="@SortClass(25, 26)"></i> Статус</a>
+                                                            <select class="form-control form-control-sm" @onchange="@StatusFilter">
+                                                                <option value="0" selected="selected">Все</option>
+                                                                @foreach (var option in statuses)
+                                                                {
+                                                                    <option value="@option.Id">
+                                                                        @option.Name
+                                                                    </option>
+                                                                }
+                                                            </select>
+                                                        </th>
+                                                        break;
+                                                }
+                                            }
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var one in unitsPaging.Units)
+                                        {
+                                            <tr>
+                                                @for (int i = 1; i < 14; i++)
+                                                {
+                                                    @switch (tableCollumns[i])
+                                                    {
+                                                        case "category":
+                                                            <td>@one.Category.Name</td>
+                                                            break;
+                                                        case "departament":
+                                                            <td>@one.Departament?.Name</td>
+                                                            break;
+                                                        case "employer":
+                                                            <td>@one.Employer?.Name</td>
+                                                            break;
+                                                        case "installdate":
+                                                            <td>@one.InstallDate?.ToString("d")</td>
+                                                            break;
+                                                        case "invent":
+                                                            <td>@one.InventId</td>
+                                                            break;
+                                                        case "ip":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <td>@string.Join(", ", one.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()).ToArray())</td>
+                                                            }
+                                                            break;
+                                                        case "location":
+                                                            <td>@one.Location</td>
+                                                            break;
+                                                        case "man":
+                                                            <td>@one.Manufacturer?.Name</td>
+                                                            break;
+                                                        case "model":
+                                                            <td><a href="/unit/@one.Id" class="text-decoration-none">@(one.Model ?? "Не указана")</a></td>
+                                                            break;
+                                                        case "netname":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <td>@one.NetName</td>
+                                                            }
+                                                            break;
+                                                        case "serial":
+                                                            <td>@one.Serial</td>
+                                                            break;
+                                                        case "specs":
+                                                            <td>@one.Specs</td>
+                                                            break;
+                                                        case "status":
+                                                            <td>@one.UnitStatus.Name</td>
+                                                            break;
+                                                    }
+                                                }
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                                <div class="d-sm-flex align-items-center justify-content-between">
+                                    <p>Всего техники: @unitsPaging.TotalCount</p>
+                                    @if (unitsPaging.TotalPages > 1)
+                                    {
+                                        <ul class="pagination">
+                                            @if (HasPrevious())
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="(()=>SetPage(currentPage - 1))">&laquo;  Назад</button>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" aria-disabled="true">&laquo;  Назад</a>
+                                                </li>
+                                            }
+                                            @if (Start > 1)
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="(()=>SetPage(1))">1</button>
+                                                </li>
+                                            }
+                                            @if (Start > 2)
+                                            {
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" aria-disabled="true">...</a>
+                                                </li>
+                                            }
+                                            @for (var i = Start; i <= Finish; i++)
+                                            {
+                                                var temp = i;
+                                                if (i == currentPage)
+                                                {
+                                                    <li class="page-item active">
+                                                        <span class="page-link">
+                                                            @i
+                                                            <span class="sr-only">(current)</span>
+                                                        </span>
+                                                    </li>
+                                                }
+                                                else
+                                                {
+                                                    <li class="page-item">
+                                                        <button class="page-link" @onclick="(()=>SetPage(temp))">@i</button>
+                                                    </li>
+                                                }
+                                            }
+                                            @if (Finish < unitsPaging.TotalPages)
+                                            {
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" aria-disabled="true">...</a>
+                                                </li>
+                                            }
+                                            @if (Finish < unitsPaging.TotalPages)
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="(()=>SetPage(unitsPaging.TotalPages))">@unitsPaging.TotalPages</button>
+                                                </li>
+                                            }
+                                            @if (HasNext())
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="(()=>SetPage(currentPage + 1))">Вперед  &raquo;</button>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li class="page-item disabled">
+                                                    <a class="page-link" aria-disabled="true">Вперед  &raquo;</a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <h3>Ничего не найдено</h3>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [Parameter]
+    public string text { get; set; }
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    const string quote = "\"";
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    UserSettings userSettings;
+    int currentPage = 1;
+    int VisiblePages = 5;
+    int Start;
+    int Finish;
+    int? currentSort;
+    UnitsPaging unitsPaging;
+    Dictionary<int, string> tableCollumns = new Dictionary<int, string>();
+    List<Category> categories;
+    int catFilter = 0;
+    List<Departament> departaments;
+    int depFilter = 0;
+    List<Employer> employers;
+    int empFilter = 0;
+    List<Manufacturer> manufacturers;
+    int manFilter = 0;
+    List<UnitStatus> statuses;
+    int statFilter = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = (await authenticationStateTask).User;
+        await GetData();
+        await HeadElementHelper.SetTitleAsync("Результаты поиска " + quote + text + quote + " - Учет техники");
+    }
+
+    private bool HasPrevious()
+    {
+        return currentPage > 1 && unitsPaging.TotalPages > 1;
+    }
+    private bool HasNext()
+    {
+        return currentPage < unitsPaging.TotalPages;
+    }
+
+    void CalcPages()
+    {
+        VisiblePages = 5;
+        var half = (int)Math.Floor(VisiblePages / 2d);
+        Start = Math.Max(currentPage - half, 1);
+        Finish = Math.Min(currentPage + half, unitsPaging.TotalPages);
+        VisiblePages = Math.Min(VisiblePages, unitsPaging.TotalPages);
+        if (Start == 1)
+        { Finish = VisiblePages; }
+        if (Finish >= unitsPaging.TotalPages)
+        { Start = unitsPaging.TotalPages - VisiblePages; }
+        if (Start < 1)
+        { Start = 1; }
+    }
+
+    public async Task GetData()
+    {
+        userSettings = await @Service.GetSettings(_UserManager.GetUserId(CurrentUser), CurrentUser.IsInRole("Admin"));
+        if (currentSort == null) currentSort = userSettings.SortOrder;
+        tableCollumns.Add(1, userSettings.Collumn1);
+        tableCollumns.Add(2, userSettings.Collumn2);
+        tableCollumns.Add(3, userSettings.Collumn3);
+        tableCollumns.Add(4, userSettings.Collumn4);
+        tableCollumns.Add(5, userSettings.Collumn5);
+        tableCollumns.Add(6, userSettings.Collumn6);
+        tableCollumns.Add(7, userSettings.Collumn7);
+        tableCollumns.Add(8, userSettings.Collumn8);
+        tableCollumns.Add(9, userSettings.Collumn9);
+        tableCollumns.Add(10, userSettings.Collumn10);
+        tableCollumns.Add(11, userSettings.Collumn11);
+        tableCollumns.Add(12, userSettings.Collumn12);
+        tableCollumns.Add(13, userSettings.Collumn13);
+        categories = await @Service.CategoriesList();
+        departaments = await @Service.GetDepartamentsAdd();
+        employers = await @Service.GetEmployersAdd();
+        manufacturers = await @Service.GetManufacturersAdd();
+        statuses = await @Service.GetStatusesForAdd();
+        GetUnits();
+    }
+
+    void GetUnits()
+    {
+        if (CurrentUser.IsInRole("Admin"))
+            unitsPaging = @Service.adminSearch(currentSort ?? 1, currentPage, userSettings.RowsCount, catFilter, depFilter, empFilter, manFilter, statFilter, text);
+        else
+            unitsPaging = @Service.userSearch(currentSort ?? 1, currentPage, userSettings.RowsCount, catFilter, depFilter, empFilter, manFilter, statFilter, text);
+        CalcPages();
+    }
+
+    public void SetPage(int page)
+    {
+        currentPage = page;
+        GetUnits();
+    }
+
+    void CatFilter(ChangeEventArgs e)
+    {
+        catFilter = Convert.ToInt32(e.Value);
+        currentPage = 1;
+        GetUnits();
+    }
+
+    void DepFilter(ChangeEventArgs e)
+    {
+        depFilter = Convert.ToInt32(e.Value);
+        currentPage = 1;
+        GetUnits();
+    }
+
+    void EmpFilter(ChangeEventArgs e)
+    {
+        empFilter = Convert.ToInt32(e.Value);
+        currentPage = 1;
+        GetUnits();
+    }
+
+    void ManFilter(ChangeEventArgs e)
+    {
+        manFilter = Convert.ToInt32(e.Value);
+        currentPage = 1;
+        GetUnits();
+    }
+
+    void StatusFilter(ChangeEventArgs e)
+    {
+        statFilter = Convert.ToInt32(e.Value);
+        currentPage = 1;
+        GetUnits();
+    }
+
+    void SetSort(int sort)
+    {
+        currentSort = sort;
+        currentPage = 1;
+        GetUnits();
+    }
+
+    string SortClass(int sort1, int sort2)
+    {
+        if (currentSort == sort1)
+        {
+            return "fas fa-sort-up";
+        }
+        else if (currentSort == sort2)
+        {
+            return "fas fa-sort-down";
+        }
+        else
+        {
+            return "fas fa-sort";
+        }
+    }
+}

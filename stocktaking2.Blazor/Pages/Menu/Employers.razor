@@ -1,0 +1,568 @@
+﻿@page "/employers"
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using System.Security.Claims
+@using stocktaking2.Blazor.Helpers
+@using LoreSoft.Blazor.Controls
+@using Microsoft.AspNetCore.Identity;
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> _UserManager
+@inject IJSRuntime JS
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 text-gray-800">Сотрудники</h1>
+            <ul class="nav justify-content-end">
+                @if (@context.User.IsInRole("Admin"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/employers" @onclick="AddNewEmployer"><i class="fas fa-plus fa-sm"></i> Добавить сотрудника</a>
+                    </li>
+                }
+                <li class="nav-item">
+                    <a class="nav-link active" href="/employers" @onclick="Report"><i class="fas fa-download fa-sm"></i> Скачать список</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="/employers" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
+                </li>
+            </ul>
+        </div>
+        @if (empPaging.Employers == null)
+        {
+            <p><em>Данные загружаются...</em></p>
+        }
+        else
+        {
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered" id="DataTable" width="100%" cellspacing="0">
+                            <thead>
+                                <tr>
+                                    <th><a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 1 ? 2 : 1))"><i class="@SortClass(1, 2)"></i> Фамилия</a></th>
+                                    <th><a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> Имя</a></th>
+                                    <th><a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 5 ? 6 : 5))"><i class="@SortClass(5, 6)"></i> Отчество</a></th>
+                                    <th>
+                                        <a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> Отдел</a>
+                                        <select class="form-control form-control-sm" @onchange="@DepFilter">
+                                            <option value="0" selected="selected">Все</option>
+                                            @foreach (var option in departaments)
+                                            {
+                                                <option value="@option.Id">
+                                                    @option.Name
+                                                </option>
+                                            }
+                                        </select>
+                                    </th>
+                                    <th><a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 9 ? 10 : 9))"><i class="@SortClass(9, 10)"></i> Должность</a></th>
+                                    <th><a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 11 ? 12 : 11))"><i class="@SortClass(11, 12)"></i> Количество техники</a></th>
+                                    <th><a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 13 ? 14 : 13))"><i class="@SortClass(13, 14)"></i> Email</a></th>
+                                    @if (@context.User.IsInRole("Admin"))
+                                    {
+                                        <th></th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var one in empPaging.Employers)
+                                {
+                                    <tr>
+                                        <td>@one.LastName</td>
+                                        <td>@one.FirstName</td>
+                                        <td>@one.FatherName</td>
+                                        <td>@one.Departament.Name</td>
+                                        <td>@one.Post</td>
+                                        <td>@one.Units.Count</td>
+                                        <td>@string.Join(", ", one.Emails.OrderBy(a => a.Login).Select(x => x.Login).ToArray())</td>
+                                        @if (@context.User.IsInRole("Admin"))
+                                        {
+                                            <td>
+                                                <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditEmployer(one))">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteEmployer(one))">
+                                                    <i class="far fa-trash-alt"></i>
+                                                </button>
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                        <div class="d-sm-flex align-items-center justify-content-between">
+                            <p>Всего сотрудников: @empPaging.TotalCount</p>
+                            @if (empPaging.TotalPages > 1)
+                            {
+                                <ul class="pagination">
+                                    @if (HasPrevious())
+                                    {
+                                        <li class="page-item">
+                                            <button class="page-link" @onclick="(()=>SetPage(currentPage - 1))">&laquo;  Назад</button>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="page-item disabled">
+                                            <a class="page-link" aria-disabled="true">&laquo;  Назад</a>
+                                        </li>
+                                    }
+                                    @if (Start > 1)
+                                    {
+                                        <li class="page-item">
+                                            <button class="page-link" @onclick="(()=>SetPage(1))">1</button>
+                                        </li>
+                                    }
+                                    @if (Start > 2)
+                                    {
+                                        <li class="page-item disabled">
+                                            <a class="page-link" aria-disabled="true">...</a>
+                                        </li>
+                                    }
+                                    @for (var i = Start; i <= Finish; i++)
+                                    {
+                                        var temp = i;
+                                        if (i == currentPage)
+                                        {
+                                            <li class="page-item active">
+                                                <span class="page-link">
+                                                    @i
+                                                    <span class="sr-only">(current)</span>
+                                                </span>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(temp))">@i</button>
+                                            </li>
+                                        }
+                                    }
+                                    @if (Finish < empPaging.TotalPages)
+                                    {
+                                        <li class="page-item disabled">
+                                            <a class="page-link" aria-disabled="true">...</a>
+                                        </li>
+                                    }
+                                    @if (Finish < empPaging.TotalPages)
+                                    {
+                                        <li class="page-item">
+                                            <button class="page-link" @onclick="(()=>SetPage(empPaging.TotalPages))">@empPaging.TotalPages</button>
+                                        </li>
+                                    }
+                                    @if (HasNext())
+                                    {
+                                        <li class="page-item">
+                                            <button class="page-link" @onclick="(()=>SetPage(currentPage + 1))">Вперед  &raquo;</button>
+                                        </li>
+                                    }
+                                    else
+                                    {
+                                        <li class="page-item disabled">
+                                            <a class="page-link" aria-disabled="true">Вперед  &raquo;</a>
+                                        </li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if (@context.User.IsInRole("Admin"))
+            {
+                <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="@ModalButton" OnClick="(() => SaveEmployer())">
+                    <div class="form-group">
+                        <input class="form-control" id="LName" type="text" placeholder="Фамилия" @bind="ct.LastName" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" id="FName" type="text" placeholder="Имя" @bind="ct.FirstName" />
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" id="sName" type="text" placeholder="Отчество" @bind="ct.FatherName" />
+                    </div>
+                    <div class="form-group">
+                        <Typeahead SearchMethod="SearchDep"
+                                   ConvertMethod="ConvertDep"
+                                   Items="departaments"
+                                   @bind-Value="ct.DepartamentId"
+                                   Placeholder="Выберите отдел"
+                                   SearchPlaceholder="Поиск"
+                                   AllowClear="false">
+                            <SelectedTemplate Context="depId">
+                                @LookupDep(depId)?.Name
+                            </SelectedTemplate>
+                            <ResultTemplate Context="dep">
+                                @dep.Name
+                            </ResultTemplate>
+                        </Typeahead>
+                    </div>
+                    <div class="form-group">
+                        <input class="form-control" type="text" placeholder="Должность" @bind="ct.Post" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="form-group">
+                            <div class="alert alert-danger" role="alert">
+                                <i class="fas fa-exclamation-circle"></i> @error
+                            </div>
+                        </div>
+                    }
+                </ModalWindow>
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+                    <div class="form-group">
+                        <p>Действительно хотите удалить этого сотрудника?</p>
+                        <h3>@forDel.Name</h3>
+                    </div>
+                </ModalYesNoDialog>
+                <ModalHistory @ref="modalHistory">
+                    <div style="overflow: auto; max-height:500px;">
+                        @if (employersHistories == null)
+                        {
+                            <p>Данные загружаются...</p>
+                        }
+                        else
+                        {
+                            @foreach (var cH in employersHistories)
+                            {
+                                <div class="alert alert-secondary" role="alert">
+                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                    <p>Пользователь: <b>@cH.UserName</b></p>
+                                    <p class="font-weight-bold">@cH.Changes</p>
+                                </div>
+                            }
+                        }
+                    </div>
+                </ModalHistory>
+            }
+            <ModalReport @ref="modalReport" Title="Скачать список сотрудников" OnClick="DownloadReport">
+                <div class="form-group row">
+                    <label for="Hcolor" class="col-4 col-form-label">Цвет заголовка таблицы</label>
+                    <div class="col">
+                        <input id="Hcolor" type="color" class="form-control" @bind="@empReport.HeaderColor">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Текст заголовка таблицы</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="HboldCheck" @bind="@empReport.HeaderBold">
+                            <label class="form-check-label" for="HboldCheck">
+                                Жирный текст
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="Ecolor" class="col-4 col-form-label">Цвет столбца "Отдел"</label>
+                    <div class="col">
+                        <input id="Ecolor" type="color" class="form-control" @bind="@empReport.EmpColor">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Текст столбца "Отдел"</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="EboldCheck" @bind="@empReport.EmpBold">
+                            <label class="form-check-label" for="EboldCheck">
+                                Жирный текст
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Отдел</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="dep" @bind="@empReport.Dep">
+                            <label class="form-check-label" for="dep">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Должность</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="post" @bind="@empReport.Post">
+                            <label class="form-check-label" for="post">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Email</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="em" @bind="@empReport.Email">
+                            <label class="form-check-label" for="em">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Количество техники</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="uncount" @bind="@empReport.UnitCount">
+                            <label class="form-check-label" for="uncount">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="Ccolor" class="col-4 col-form-label">Цвет строк таблицы</label>
+                    <div class="col">
+                        <input id="Ccolor" type="color" class="form-control" @bind="@empReport.CellsColor">
+                    </div>
+                </div>
+            </ModalReport>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    List<EmployerHistory> employersHistories = new List<EmployerHistory>();
+    List<Departament> departaments = new List<Departament>();
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    string ModalTitle = "Редактирование сотрудника";
+    string ModalButton = "Сохранить";
+    Employer ct = new Employer();
+    Employer forDel = new Employer();
+    ModalWindow modal1;
+    ModalYesNoDialog modalYesNo;
+    ModalHistory modalHistory;
+    UserSettings userSettings;
+    string error = string.Empty;
+    int currentPage = 1;
+    int VisiblePages = 5;
+    int Start;
+    int Finish;
+    int currentSort = 1;
+    int pageSize;
+    EmpPaging empPaging;
+    int depFilter = 0;
+    EmpReport empReport;
+    ModalReport modalReport;
+
+    private bool HasPrevious()
+    {
+        return currentPage > 1 && empPaging.TotalPages > 1;
+    }
+    private bool HasNext()
+    {
+        return currentPage < empPaging.TotalPages;
+    }
+
+    void CalcPages()
+    {
+        VisiblePages = 5;
+        var half = (int)Math.Floor(VisiblePages / 2d);
+        Start = Math.Max(currentPage - half, 1);
+        Finish = Math.Min(currentPage + half, empPaging.TotalPages);
+        VisiblePages = Math.Min(VisiblePages, empPaging.TotalPages);
+        if (Start == 1)
+        { Finish = VisiblePages; }
+        if (Finish >= empPaging.TotalPages)
+        { Start = empPaging.TotalPages - VisiblePages; }
+        if (Start < 1)
+        { Start = 1; }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUser = (await authenticationStateTask).User;
+        await GetData();
+        await HeadElementHelper.SetTitleAsync("Сотрудники - Учет техники");
+    }
+
+    public async Task GetData()
+    {
+        userSettings = await @Service.GetSettings(_UserManager.GetUserId(CurrentUser), CurrentUser.IsInRole("Admin"));
+        pageSize = userSettings.RowsCount;
+        departaments = await @Service.GetDepartamentsAdd();
+        GetEmployers();
+    }
+
+    void GetEmployers()
+    {
+        empPaging = @Service.empPaging(currentSort, currentPage, pageSize, depFilter);
+        CalcPages();
+    }
+
+    public void SetPage(int page)
+    {
+        currentPage = page;
+        GetEmployers();
+    }
+
+    void AddNewEmployer()
+    {
+        ModalTitle = "Добавление сотрудника";
+        ModalButton = "Добавить";
+        error = string.Empty;
+        ct = new Employer { Id = 0 };
+        modal1.Show();
+    }
+
+    void EditEmployer(Employer cat)
+    {
+        ModalTitle = "Редактирование сотрудника";
+        ModalButton = "Сохранить";
+        error = string.Empty;
+        ct = new Employer
+        {
+            Id = cat.Id,
+            LastName = cat.LastName,
+            FatherName = cat.FatherName,
+            FirstName = cat.FirstName,
+            Post = cat.Post,
+            DepartamentId = cat.DepartamentId
+        };
+        modal1.Show();
+    }
+
+    void SaveEmployer()
+    {
+        if (string.IsNullOrEmpty(ct.LastName))
+        {
+            error = "Введите фамилию";
+            return;
+        }
+        if (string.IsNullOrEmpty(ct.FirstName))
+        {
+            error = "Введите имя";
+            return;
+        }
+        if (string.IsNullOrEmpty(ct.FatherName))
+        {
+            error = "Введите отчество";
+            return;
+        }
+        if (ct.DepartamentId == 0)
+        {
+            error = "Выберите отдел";
+            return;
+        }
+        if (ct.Id == 0)
+        {
+            var result = @Service.CreateEmployer(ct, CurrentUser.Identity.Name);
+        }
+        else
+        {
+            var result = @Service.EditEmployer(ct, CurrentUser.Identity.Name);
+        }
+        error = string.Empty;
+        modal1.Show();
+        GetEmployers();
+    }
+
+    void DeleteEmployer(Employer cat)
+    {
+        forDel = cat;
+        error = string.Empty;
+        modalYesNo.Show();
+    }
+
+    void Del()
+    {
+        var result = @Service.DeleteEmployer(forDel, CurrentUser.Identity.Name);
+        error = string.Empty;
+        modalYesNo.Show();
+        forDel = null;
+        GetEmployers();
+    }
+
+    async void ShowHistoryModal()
+    {
+        employersHistories = await @Service.GetEmployersHistories();
+        modalHistory.Show();
+    }
+
+    void EmpRename()
+    {
+        var result = @Service.RenameEmployers();
+    }
+
+    void DepFilter(ChangeEventArgs e)
+    {
+        depFilter = Convert.ToInt32(e.Value);
+        currentPage = 1;
+        GetEmployers();
+    }
+
+    void SetSort(int sort)
+    {
+        currentSort = sort;
+        currentPage = 1;
+        GetEmployers();
+    }
+
+    string SortClass(int sort1, int sort2)
+    {
+        if (currentSort == sort1)
+        {
+            return "fas fa-sort-up";
+        }
+        else if (currentSort == sort2)
+        {
+            return "fas fa-sort-down";
+        }
+        else
+        {
+            return "fas fa-sort";
+        }
+    }
+
+    void Report()
+    {
+        empReport = new EmpReport
+        {
+            CellsColor = "#b7e1cd",
+            UnitCount = true,
+            Email = true,
+            Post = true,
+            Dep = true,
+            EmpBold = true,
+            EmpColor = "#b8cce4",
+            HeaderBold = true,
+            HeaderColor = "#ffbf00"
+        };
+        modalReport.Show();
+    }
+
+    void DownloadReport()
+    {
+        modalReport.StartWork();
+        var report = @Service.EmpsReport(empReport);
+        JS.SaveAs($"employers-{DateTime.Now.ToString("d")}.xlsx", report);
+        modalReport.Show();
+    }
+
+    public async Task<IEnumerable<Departament>> SearchDep(string searchText)
+    {
+        var result = departaments
+            .Where(x => x.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return await Task.FromResult(result);
+    }
+
+    public int ConvertDep(Departament dep)
+    {
+        return dep?.Id ?? 0;
+    }
+
+    public Departament LookupDep(int? id)
+    {
+        return departaments.FirstOrDefault(p => p.Id == id) ?? new Departament {Name = "Выберите отдел", Id = 0 };
+    }
+}
