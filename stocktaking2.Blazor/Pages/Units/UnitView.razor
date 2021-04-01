@@ -395,7 +395,7 @@
                                     @if (@context.User.IsInRole("Admin"))
                                     {
                                         <div class="col-md-auto">
-                                            <InputFile OnChange="HandleSelection" />
+                                            <BlazorInputFile.InputFile OnChange="HandleSelection" />
                                             <p>@status</p>
                                         </div>
                                     }

@@ -48,6 +48,7 @@ namespace stocktaking2.Blazor
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddHeadElementHelper();
+            services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
         }
 
@@ -57,7 +58,6 @@ namespace stocktaking2.Blazor
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseDatabaseErrorPage();
             }
             else
             {
