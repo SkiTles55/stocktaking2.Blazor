@@ -24,9 +24,9 @@
                     </li>
                 </ul>
             </div>
-            @if (ColUsers == null)
+            @if (UsersList.Count < 1)
             {
-                <p><em>Данные загружаются...</em></p>
+                <PageLoadingSpinner />
             }
             else
             {
@@ -37,25 +37,27 @@
                                 <thead>
                                     <tr>
                                         <th>Email</th>
+                                        <th>Роль</th>
                                         <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var one in ColUsers)
+                                    @foreach (var one in UsersList)
                                     {
                                         <tr>
-                                            <td>@one.Email</td>
+                                            <td>@one.Key.Email</td>
+                                            <td>@(one.Value.Contains("Admin") ? "Администратор" : "Пользователь")</td>
                                             <td>
-                                                <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditUser(one))">
+                                                <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditUser(one.Key))">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-secondary btn-circle" title="Изменить пароль" @onclick="(() => ChangePass(one))">
+                                                <button class="btn btn-secondary btn-circle" title="Изменить пароль" @onclick="(() => ChangePass(one.Key))">
                                                     <i class="fas fa-key"></i>
                                                 </button>
-                                                <a class="btn btn-info btn-circle" title="История активности" href="/activity/@one.Email">
+                                                <a class="btn btn-info btn-circle" title="История активности" href="/activity/@one.Key.Email">
                                                     <i class="fas fa-list"></i>
                                                 </a>
-                                                <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteUser(one))">
+                                                <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteUser(one.Key))">
                                                     <i class="far fa-trash-alt"></i>
                                                 </button>
                                             </td>
@@ -80,8 +82,8 @@
                         <select class="form-control form-control-user" @bind="@CurrentUserRole">
                             @foreach (var option in Options)
                             {
-                                <option value="@option">
-                                    @option
+                                <option value="@option.Key">
+                                    @option.Value
                                 </option>
                             }
                         </select>
@@ -147,10 +149,11 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
-    List<IdentityUser> ColUsers = new List<IdentityUser>();
+    //List<IdentityUser> ColUsers;
+    Dictionary<IdentityUser, string[]> UsersList = new Dictionary<IdentityUser, string[]>();
     List<UserHistory> userHistories = new List<UserHistory>();
     ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
-    string ModalTitle = "Редактирование ОС";
+    string ModalTitle = "Редактирование пользователя";
     string ModalButton = "Сохранить";
     IdentityUser ct = new IdentityUser();
     IdentityUser forDel = new IdentityUser();
@@ -161,19 +164,24 @@
     string NewPass = string.Empty;
     string error = string.Empty;
     string CurrentUserRole { get; set; } = "Users";
-    List<string> Options = new List<string>() { "Users", "Admin" };
+    Dictionary<string, string> Options = new Dictionary<string, string>() { ["Users"] = "Пользователь", ["Admin"] = "Администратор" };
     string quote = "\"";
 
     protected override async Task OnInitializedAsync()
     {
-        GetUsers();
-        CurrentUser = (await authenticationStateTask).User;
         await HeadElementHelper.SetTitleAsync("Пользователи - Учет техники");
+        await GetUsers();
+        CurrentUser = (await authenticationStateTask).User;
     }
 
-    public void GetUsers()
+    public async Task GetUsers()
     {
-        ColUsers = _UserManager.Users.ToList();
+        UsersList = new Dictionary<IdentityUser, string[]>();
+        foreach (var us in _UserManager.Users)
+        {
+            var roles = await _UserManager.GetRolesAsync(us);
+            UsersList.Add(us, roles.ToArray());
+        }
     }
 
     void AddNewUser()
@@ -187,7 +195,7 @@
 
     void EditUser(IdentityUser cat)
     {
-        ModalTitle = "Редактирование ОС";
+        ModalTitle = "Редактирование пользователя";
         ModalButton = "Сохранить";
         error = string.Empty;
         ct = new IdentityUser
@@ -195,6 +203,7 @@
             Id = cat.Id,
             Email = cat.Email
         };
+        CurrentUserRole = UsersList[cat].Contains("Admin") ? "Admin" : "Users";
         modal1.Show();
     }
 
@@ -268,7 +277,7 @@
             }
             error = string.Empty;
             modal1.Show();
-            GetUsers();
+            await GetUsers();
         }
         catch (Exception ex)
         {
@@ -295,7 +304,7 @@
         error = string.Empty;
         modalYesNo.Show();
         forDel = null;
-        GetUsers();
+        await GetUsers();
     }
 
     async void ShowHistoryModal()

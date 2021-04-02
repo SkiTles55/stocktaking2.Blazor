@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace stocktaking2.Blazor.Helpers
@@ -13,7 +14,7 @@ namespace stocktaking2.Blazor.Helpers
             {
                 await roleManager.CreateAsync(new IdentityRole("Admin"));
             }
-            if (await userManager.FindByNameAsync(adminEmail) == null)
+            if (userManager.Users.Count() < 1)
             {
                 IdentityUser admin = new IdentityUser { Email = adminEmail, UserName = adminEmail };
                 IdentityResult result = await userManager.CreateAsync(admin, password);
