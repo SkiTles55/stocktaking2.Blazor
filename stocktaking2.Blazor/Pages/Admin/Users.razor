@@ -24,7 +24,7 @@
                     </li>
                 </ul>
             </div>
-            @if (UsersList.Count < 1)
+            @if (UsersList == null)
             {
                 <PageLoadingSpinner />
             }
@@ -149,8 +149,7 @@
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
-    //List<IdentityUser> ColUsers;
-    Dictionary<IdentityUser, string[]> UsersList = new Dictionary<IdentityUser, string[]>();
+    Dictionary<IdentityUser, string[]> UsersList;
     List<UserHistory> userHistories = new List<UserHistory>();
     ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
     string ModalTitle = "Редактирование пользователя";
@@ -177,7 +176,7 @@
     public async Task GetUsers()
     {
         UsersList = new Dictionary<IdentityUser, string[]>();
-        foreach (var us in _UserManager.Users)
+        foreach (var us in _UserManager.Users.ToList())
         {
             var roles = await _UserManager.GetRolesAsync(us);
             UsersList.Add(us, roles.ToArray());

@@ -11,15 +11,23 @@
 @inherits OwningComponentBase<DbService>
 <AuthorizeView>
     <Authorized>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 text-gray-800">Карточка техники</h1>
+        </div>
         @if (unit == null)
         {
-            <p><em>Ошибка. Техника с таким ID не найдена.</em></p>
+            if (FullLoaded)
+            {
+                <p><em>Ошибка. Техника с таким ID не найдена.</em></p>
+            }
+            else
+            {
+                <PageLoadingSpinner />
+            }
+
         }
         else
         {
-            <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                <h1 class="h3 mb-0 text-gray-800">Карточка техники</h1>
-            </div>
             <div class="row">
                 <div class="col-xl-8 col-lg-7">
                     <div class="card shadow mb-4 border-left-primary">
@@ -907,7 +915,7 @@
     public int Id { get; set; }
     [CascadingParameter]
     private Task<AuthenticationState> authenticationStateTask { get; set; }
-    Unit unit = new Unit();
+    Unit unit;
     ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
     ModalHistory modalHistory;
     string forEdit = string.Empty;
@@ -951,12 +959,15 @@
     ModalAddDialog addRDP;
     string status;
     StoredFile fileForDel;
+    bool FullLoaded = false;
 
     protected override async Task OnInitializedAsync()
     {
+        await HeadElementHelper.SetTitleAsync("Загрузка данных - Учет техники");
         await GetUnit();
         CurrentUser = (await authenticationStateTask).User;
-        string unitname = unit == null ? "Ошибка" : "Карточка техники " + (!string.IsNullOrEmpty(unit.Model) ? unit.Model : unit.Id.ToString());
+        string unitname = unit == null ? "Ошибка" : "Карточка техники " + (!string.IsNullOrEmpty(unit.Model) ? unit.Model : "id" + unit.Id.ToString());
+        FullLoaded = true;
         await HeadElementHelper.SetTitleAsync(unitname + " - Учет техники");
     }
 

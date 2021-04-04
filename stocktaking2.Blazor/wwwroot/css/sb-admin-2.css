@@ -253,6 +253,7 @@ caption {
 
 th {
   text-align: inherit;
+  white-space: nowrap;
 }
 
 label {

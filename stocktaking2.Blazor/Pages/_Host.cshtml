@@ -21,7 +21,7 @@
 </head>
 <body id="page-top">
     <app>
-        @(await Html.RenderComponentAsync<App>(RenderMode.ServerPrerendered))
+        @(await Html.RenderComponentAsync<App>(RenderMode.Server))
     </app>
     <script src="vendor/jquery/jquery.min.js"></script>
     <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -54,6 +54,13 @@
             page.document.close(); // necessary for IE >= 10
             page.focus(); // necessary for IE >= 10*/
             page.print();
+        }
+    </script>
+    <script type="text/javascript">
+        function anchor(element) {
+            var Element = document.getElementById(element);
+            if (Element)
+                Element.scrollIntoView({ alalignToTop: true, behavior: "smooth" });
         }
     </script>
 </body>

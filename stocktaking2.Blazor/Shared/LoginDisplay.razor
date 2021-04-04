@@ -26,15 +26,3 @@
         </li>
     </Authorized>
 </AuthorizeView>
-@code {
-    protected override async Task OnInitializedAsync()
-    {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (!user.Identity.IsAuthenticated)
-        {
-            NavigationManager.NavigateTo("Identity/Account/Login");
-        }
-    }
-}

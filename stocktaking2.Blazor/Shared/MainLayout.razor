@@ -1,80 +1,86 @@
 ﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager MyNavigationManager
-    <div id="wrapper">
-        <div>
-            <NavMenu />
-        </div>
-        <div id="content-wrapper" class="d-flex flex-column">
-            <div id="content">
-                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
-                    <div class="d-none d-sm-inline-block form-inline ml-md-3 my-2 my-md-0 mw-100 navbar-search">
-                        <div class="input-group">
-                            <input type="text" class="form-control bg-light border-0 small" placeholder="Искать технику..." id="search" @bind="@search">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="button" @onclick="Search">
-                                    <i class="fas fa-search fa-sm"></i>
-                                </button>
-                            </div>
+<div id="wrapper">
+    <div>
+        <NavMenu />
+    </div>
+    <div id="content-wrapper" class="d-flex flex-column">
+        <div id="content">
+            <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                <div class="d-none d-sm-inline-block form-inline ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                    <div class="input-group">
+                        <input type="text" class="form-control bg-light border-0 small" placeholder="Искать технику..." id="search" @bind="@search">
+                        <div class="input-group-append">
+                            <NavLink class="btn btn-primary" href="@(string.IsNullOrEmpty(search) ? MyNavigationManager.Uri : "search/" + search)">
+                                <i class="fas fa-search fa-sm"></i>
+                                <span>Поиск</span>
+                            </NavLink>
                         </div>
                     </div>
-                    <IPSearch />
-                    <ul class="navbar-nav ml-auto">
-                        <div class="topbar-divider d-none d-sm-block"></div>
-                        <LoginDisplay />
-                    </ul>
-                </nav>
-                <div class="container-fluid">
-                    @Body
+                </div>
+                <IPSearch />
+                <ul class="navbar-nav ml-auto">
+                    <li class="topbar-divider d-none d-sm-block"></li>
+                    <LoginDisplay />
+                </ul>
+            </nav>
+            <div class="container-fluid">
+                @Body
+            </div>
+        </div>
+        <footer class="sticky-footer bg-white">
+            <div class="container my-auto">
+                <div class="copyright text-center my-auto">
+                    <span>Copyright &copy; Худяков Д.С. 2021</span>
                 </div>
             </div>
-            <footer class="sticky-footer bg-white">
-                <div class="container my-auto">
-                    <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Худяков Д.С. 2021</span>
-                    </div>
-                </div>
-            </footer>
-        </div>
+        </footer>
     </div>
-    <a class="scroll-to-top rounded" href="@(MyNavigationManager.Uri + "#page-top")">
-        <i class="fas fa-angle-up"></i>
-    </a>
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Действительно хотите выйти?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-footer">
-                    <form method="post" action="Identity/Account/LogOut">
-                        <button type="submit" class="btn btn-danger btn-icon-split">
-                            <span class="icon text-white-50">
-                                <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-                            </span>
-                            <span class="text">Выход</span>
-                        </button>
-                    </form>
-                    <button type="button" class="btn btn-secondary btn-icon-split" data-dismiss="modal">
+</div>
+<a class="scroll-to-top rounded" href="@(MyNavigationManager.Uri + "#page-top")">
+    <i class="fas fa-angle-up"></i>
+</a>
+<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Действительно хотите выйти?</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="modal-footer">
+                <form method="post" action="Identity/Account/LogOut">
+                    <button type="submit" class="btn btn-danger btn-icon-split">
                         <span class="icon text-white-50">
-                            <i class="fas fa-ban"></i>
+                            <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                         </span>
-                        <span class="text">Отмена</span>
+                        <span class="text">Выход</span>
                     </button>
-                </div>
+                </form>
+                <button type="button" class="btn btn-secondary btn-icon-split" data-dismiss="modal">
+                    <span class="icon text-white-50">
+                        <i class="fas fa-ban"></i>
+                    </span>
+                    <span class="text">Отмена</span>
+                </button>
             </div>
         </div>
     </div>
-    @code {
-        string search = string.Empty;
+</div>
+@code {
+    string search = string.Empty;
 
-        void Search()
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity.IsAuthenticated)
         {
-            if (!string.IsNullOrEmpty(search))
-            {
-                MyNavigationManager.NavigateTo("search/" + search, true);
-            }
+            MyNavigationManager.NavigateTo("Identity/Account/Login", true);
         }
     }
+}

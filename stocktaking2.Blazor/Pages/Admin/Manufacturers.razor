@@ -23,9 +23,9 @@
                     </li>
                 </ul>
             </div>
-            @if (manPaging.Manufacturers == null)
+            @if (manPaging == null)
             {
-                <p><em>Данные загружаются...</em></p>
+                <PageLoadingSpinner />
             }
             else
             {
@@ -252,9 +252,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await HeadElementHelper.SetTitleAsync("Производители - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
         await GetData();
-        await HeadElementHelper.SetTitleAsync("Производители - Учет техники");
     }
 
     public async Task GetData()

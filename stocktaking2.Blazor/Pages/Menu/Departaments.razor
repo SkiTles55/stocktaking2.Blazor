@@ -28,9 +28,9 @@
                 </li>
             </ul>
         </div>
-        @if (depPaging.Departaments == null)
+        @if (depPaging == null)
         {
-            <p><em>Данные загружаются...</em></p>
+            <PageLoadingSpinner />
         }
         else
         {
@@ -342,9 +342,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await HeadElementHelper.SetTitleAsync("Отделы - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
         await GetData();
-        await HeadElementHelper.SetTitleAsync("Отделы - Учет техники");
     }
 
     public async Task GetData()

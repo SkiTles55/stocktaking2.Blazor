@@ -2243,7 +2243,7 @@ namespace stocktaking2.Blazor.Data
         #endregion
 
         #region Index
-        public ChartData GetCharts()
+        public Task<ChartData> GetCharts()
         {
             ChartData chartData = new ChartData();
             chartData.depUnitsBar = new Dictionary<string, double>();
@@ -2252,7 +2252,7 @@ namespace stocktaking2.Blazor.Data
                 chartData.depUnitsBar.Add(dep.Name, dep.Units.Count);
             foreach (var cat in _context.Categories.Include(x => x.Units).Where(x => x.Units.Count > 0).OrderBy(x => x.Name))
                 chartData.catUnitsPie.Add(cat.Name, cat.Units.Count);
-            return chartData;
+            return Task.FromResult(chartData);
         }
         #endregion
 

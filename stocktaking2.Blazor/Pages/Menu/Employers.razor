@@ -29,9 +29,9 @@
                 </li>
             </ul>
         </div>
-        @if (empPaging.Employers == null)
+        @if (empPaging == null)
         {
-            <p><em>Данные загружаются...</em></p>
+            <PageLoadingSpinner />
         }
         else
         {
@@ -379,9 +379,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await HeadElementHelper.SetTitleAsync("Сотрудники - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
         await GetData();
-        await HeadElementHelper.SetTitleAsync("Сотрудники - Учет техники");
     }
 
     public async Task GetData()
@@ -563,6 +563,6 @@
 
     public Departament LookupDep(int? id)
     {
-        return departaments.FirstOrDefault(p => p.Id == id) ?? new Departament {Name = "Выберите отдел", Id = 0 };
+        return departaments.FirstOrDefault(p => p.Id == id) ?? new Departament { Name = "Выберите отдел", Id = 0 };
     }
 }

@@ -23,9 +23,9 @@
                     </li>
                 </ul>
             </div>
-            @if (statusPaging.UnitStatuses == null)
+            @if (statusPaging == null)
             {
-                <p><em>Данные загружаются...</em></p>
+                <PageLoadingSpinner />
             }
             else
             {
@@ -263,9 +263,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await HeadElementHelper.SetTitleAsync("Статусы техники - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
         await GetData();
-        await HeadElementHelper.SetTitleAsync("Статусы техники - Учет техники");
     }
 
     public async Task GetData()

@@ -23,9 +23,9 @@
                     </li>
                 </ul>
             </div>
-            @if (winNamePaging.WinNames == null)
+            @if (winNamePaging == null)
             {
-                <p><em>Данные загружаются...</em></p>
+                <PageLoadingSpinner />
             }
             else
             {
@@ -233,9 +233,9 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await HeadElementHelper.SetTitleAsync("Операционные системы - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
         await GetData();
-        await HeadElementHelper.SetTitleAsync("Операционные системы - Учет техники");
     }
 
     public async Task GetData()

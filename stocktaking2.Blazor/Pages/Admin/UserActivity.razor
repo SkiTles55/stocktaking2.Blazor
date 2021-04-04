@@ -2,19 +2,26 @@
 @using stocktaking2.Blazor.Data
 @using stocktaking2.Blazor.Helpers
 @using Microsoft.AspNetCore.Identity
+@using System.Globalization
 @using BlazorDateRangePicker
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> _UserManager
 @inject IHeadElementHelper HeadElementHelper
+@inject IJSRuntime JS
 @inherits OwningComponentBase<DbService>
 <AuthorizeView>
     <Authorized>
         @if (@context.User.IsInRole("Admin"))
         {
             <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                <h1 class="h3 mb-0 text-gray-800">История активности пользователя @User</h1>
+                <h1 class="h3 mb-0 text-gray-800">История активности пользователя @User @StartDate.Value.DateTime.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU")) - @EndDate.Value.DateTime.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</h1>
                 <div class="col-xl-3 col-md-6">
-                    <DateRangePicker MinDate="DateTimeOffset.Now.AddYears(-10)" MaxDate="DateTimeOffset.Now.AddDays(1)" class="form-control form-control-sm" @bind-StartDate="StartDate" @bind-EndDate="EndDate" ApplyLabel="Показать" CancelLabel="Отмена" OnRangeSelect="OnRangeSelect" Opens="SideType.Left" Ranges="DateRanges" CustomRangeLabel="Выбрать промежуток времени" AlwaysShowCalendars="true">
+                    <DateRangePicker MinDate="DateTimeOffset.Now.AddYears(-10)" MaxDate="DateTimeOffset.Now.AddDays(1)" 
+                                     class="form-control form-control-sm" @bind-StartDate="StartDate" 
+                                     @bind-EndDate="EndDate" ApplyLabel="Показать" CancelLabel="Отмена" 
+                                     OnRangeSelect="OnRangeSelect" Opens="SideType.Left" Ranges="DateRanges" 
+                                     CustomRangeLabel="Выбрать промежуток времени" AlwaysShowCalendars="true"
+                                     Culture="@(System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))">
                         <PickerTemplate Context="ct">
                             <div id="@ct.ParentId" @onclick="ct.Toggle" class="form-control form-control-sm">
                                 <i class="far fa-calendar-alt"></i>&nbsp;
@@ -49,320 +56,378 @@
                 }
                 else
                 {
-                    <div class="row">
-                        @if (activityLog.UnitLogs.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Техника</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Техника</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.UnitLogs)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td><a href="/unit/@ul.UnitId" class="text-decoration-none">@(string.IsNullOrEmpty(ul.UnitModel) ? "Модель не указана" : ul.UnitModel)</a></td>
-                                                            <td>@ul.Change</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.unitStatusHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Статусы техники</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.unitStatusHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.userHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Пользователи</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.userHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.employerHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Сотрудники</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.employerHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.departamentHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Отделы</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.departamentHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.categoryHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Типы техники</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.categoryHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.emailHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Аккаунты Email</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.emailHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.installedSoftHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Программное обеспечение</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.installedSoftHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.manufacturerHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Производители</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.manufacturerHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
-                        @if (activityLog.winNameHistories.Count > 0)
-                        {
-                            <div class="col-12">
-                                <div class="card shadow mb-4 border-left-primary">
-                                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                        <h5 class="m-0 font-weight-bold text-primary">Операционные системы</h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-sm">
-                                                <thead>
-                                                    <tr>
-                                                        <th class="th-history">Дата/Время</th>
-                                                        <th>Изменения</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var ul in activityLog.winNameHistories)
-                                                    {
-                                                        <tr>
-                                                            <td>@ul.Time.ToString("g")</td>
-                                                            <td>@ul.Changes</td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        }
+    <div class="row">
+        <div class="col-9">
+            @if (activityLog.UnitLogs.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-unit">Техника</h5>
                     </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Техника</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.UnitLogs)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td><a href="/unit/@ul.UnitId" class="text-decoration-none">@(string.IsNullOrEmpty(ul.UnitModel) ? "Модель не указана" : ul.UnitModel)</a></td>
+                                            <td>@ul.Change</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.unitStatusHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-unitStatus">Статусы техники</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.unitStatusHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.userHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-user">Пользователи</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.userHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.employerHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-employer">Сотрудники</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.employerHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.departamentHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-departament">Отделы</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.departamentHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.categoryHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-category">Типы техники</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.categoryHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.emailHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-email">Аккаунты Email</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.emailHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.installedSoftHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-installedSoft">Программное обеспечение</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.installedSoftHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.manufacturerHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-manufacturer">Производители</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.manufacturerHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (activityLog.winNameHistories.Count > 0)
+            {
+                <div class="card shadow mb-4 border-left-primary">
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h5 class="m-0 font-weight-bold text-primary" id="history-winName">Операционные системы</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="th-history">Дата/Время</th>
+                                        <th>Изменения</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var ul in activityLog.winNameHistories)
+                                    {
+                                        <tr>
+                                            <td>@ul.Time.ToString("g", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
+                                            <td>@ul.Changes</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="col-3">
+            <div class="card shadow mb-4 border-left-primary">
+                <div id="list-example" class="list-group">
+                    @if (activityLog.UnitLogs.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-unit"))">
+                            Техника
+                            <span class="badge badge-primary badge-pill">@activityLog.UnitLogs.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.unitStatusHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-unitStatus"))">
+                            Статусы техники
+                            <span class="badge badge-primary badge-pill">@activityLog.unitStatusHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.userHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-user"))">
+                            Пользователи
+                            <span class="badge badge-primary badge-pill">@activityLog.userHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.employerHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-employer"))">
+                            Сотрудники
+                            <span class="badge badge-primary badge-pill">@activityLog.employerHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.departamentHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-departament"))">
+                            Отделы
+                            <span class="badge badge-primary badge-pill">@activityLog.departamentHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.categoryHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-category"))">
+                            Типы техники
+                            <span class="badge badge-primary badge-pill">@activityLog.categoryHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.emailHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-email"))">
+                            Аккаунты Email
+                            <span class="badge badge-primary badge-pill">@activityLog.emailHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.installedSoftHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-installedSoft"))">
+                            Программное обеспечение
+                            <span class="badge badge-primary badge-pill">@activityLog.installedSoftHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.manufacturerHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-manufacturer"))">
+                            Производители
+                            <span class="badge badge-primary badge-pill">@activityLog.manufacturerHistories.Count</span>
+                        </button>
+                    }
+                    @if (activityLog.winNameHistories.Count > 0)
+                    {
+                        <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" @onclick="@(()=>ScrollToAnchor("history-winName"))">
+                            Операционные системы
+                            <span class="badge badge-primary badge-pill">@activityLog.winNameHistories.Count</span>
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
                 }
             }
         }
@@ -427,11 +492,16 @@
         activityLog = await @Service.GetUserActivityRange(CurrentUser.Email, StartDate.Value.DateTime, EndDate.Value.DateTime);
     }
 
-    async void OnRangeSelect(DateRange range)
+    async Task OnRangeSelect(DateRange range)
     {
         if (CurrentUser != null)
         {
             await GetActivity();
         }
+    }
+
+    async Task ScrollToAnchor(string element)
+    {
+        await JS.InvokeVoidAsync("anchor", element);
     }
 }

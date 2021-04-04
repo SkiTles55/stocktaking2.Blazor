@@ -51,9 +51,9 @@
     private BarDataset<DoubleWrapper> depUnitsDataSet;
     private ChartData data;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        data = @Service.GetCharts();
+        data = await @Service.GetCharts();
         pieConfig = new PieConfig
         {
             Options = new PieOptions
@@ -84,7 +84,7 @@
                 Scales = new BarScales
                 {
                     XAxes = new List<CartesianAxis>
-            {
+    {
                         new BarCategoryAxis
                         {
                             BarPercentage = 1,
@@ -92,7 +92,7 @@
                         }
                     },
                     YAxes = new List<CartesianAxis>
-            {
+    {
                         new BarLinearCartesianAxis
                         {
                             Ticks = new LinearCartesianTicks

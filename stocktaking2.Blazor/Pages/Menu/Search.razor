@@ -12,11 +12,11 @@
 <AuthorizeView>
     <Authorized>
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800">Результаты поиска @(quote + text + quote)</h1>
+            <h1 class="h3 mb-0 text-gray-800">@title</h1>
         </div>
-        @if (unitsPaging.Units == null)
+        @if (unitsPaging == null)
         {
-            <p><em>Данные загружаются...</em></p>
+            <PageLoadingSpinner />
         }
         else
         {
@@ -311,11 +311,15 @@
     int manFilter = 0;
     List<UnitStatus> statuses;
     int statFilter = 0;
+    string title = "Результаты поиска";
 
     protected override async Task OnInitializedAsync()
     {
+        title = "Поиск " + quote + text + quote + " - Учет техники";
+        await HeadElementHelper.SetTitleAsync("Поиск " + quote + text + quote + " - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
         await GetData();
+        title = "Результаты поиска " + quote + text + quote + " - Учет техники";
         await HeadElementHelper.SetTitleAsync("Результаты поиска " + quote + text + quote + " - Учет техники");
     }
 
