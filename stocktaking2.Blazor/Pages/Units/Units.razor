@@ -33,7 +33,7 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="table-responsive">
-                            <table class="table table-bordered" id="DataTable" width="100%" cellspacing="0">
+                            <table class="table table-bordered table-hover" id="DataTable" width="100%" cellspacing="0">
                                 <thead>
                                     <tr>
                                         @for (int i = 1; i < 14; i++)
@@ -147,7 +147,7 @@
                                 <tbody>
                                     @foreach (var one in unitsPaging.Units)
                                     {
-                                        <tr>
+                                        <tr class="tr-link" @onclick="@(() => OpenUnit(one))">
                                             @for (int i = 1; i < 14; i++)
                                             {
                                                 @switch (tableCollumns[i])
@@ -180,7 +180,7 @@
                                                         <td>@one.Manufacturer?.Name</td>
                                                         break;
                                                     case "model":
-                                                        <td><a href="/unit/@one.Id" class="text-decoration-none">@(!string.IsNullOrEmpty(one.Model) ? one.Model : "Не указана")</a></td>
+                                                        <td>@(!string.IsNullOrEmpty(one.Model) ? one.Model : "Не указана")</td>
                                                         break;
                                                     case "netname":
                                                         if (@context.User.IsInRole("Admin"))
@@ -763,5 +763,10 @@
         {
             return "fas fa-sort";
         }
+    }
+
+    void OpenUnit(Unit unit)
+    {
+        MyNavigationManager.NavigateTo("unit/" + unit.Id);
     }
 }
