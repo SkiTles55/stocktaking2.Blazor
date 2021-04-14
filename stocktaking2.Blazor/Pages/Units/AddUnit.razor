@@ -3,7 +3,6 @@
 @using stocktaking2.Blazor.Data.DB
 @using stocktaking2.Blazor.Helpers
 @using System.Security.Claims
-@using LoreSoft.Blazor.Controls
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 @inject IHeadElementHelper HeadElementHelper
@@ -28,19 +27,22 @@
                                 <div class="form-group row">
                                     <label for="UnitCategory" class="col-3 col-form-label">Тип техники</label>
                                     <div class="col">
-                                        <Typeahead SearchMethod="SearchCat"
-                                                   ConvertMethod="ConvertCat"
-                                                   Items="categories"
-                                                   @bind-Value="newUnit.CategoryId"
-                                                   Placeholder="Выберите тип техники"
-                                                   SearchPlaceholder="Поиск">
+                                        <BlazoredTypeahead SearchMethod="SearchCat"
+                                                           ConvertMethod="ConvertCat"
+                                                           EnableDropDown="true"
+                                                           ShowDropDownOnFocus="true"
+                                                           Items="categories"
+                                                           @bind-Value="newUnit.CategoryId"
+                                                           Placeholder="Выберите тип техники"
+                                                           SearchPlaceholder="Поиск">
                                             <SelectedTemplate Context="catId">
                                                 @LookupCat(catId).Name
                                             </SelectedTemplate>
                                             <ResultTemplate Context="cat">
                                                 @cat.Name
                                             </ResultTemplate>
-                                        </Typeahead>
+                                            <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                        </BlazoredTypeahead>
                                     </div>
                                 </div>
                                 @if (newUnit.CategoryId.HasValue)
@@ -50,19 +52,22 @@
                                         <div class="form-group row">
                                             <label for="text1" class="col-3 col-form-label">Производитель</label>
                                             <div class="col">
-                                                <Typeahead SearchMethod="SearchMan"
-                                                           ConvertMethod="ConvertMan"
-                                                           Items="Manufacturers(newUnit.CategoryId.Value)"
-                                                           @bind-Value="newUnit.ManufacturerId"
-                                                           Placeholder="Выберите производителя"
-                                                           SearchPlaceholder="Поиск">
+                                                <BlazoredTypeahead SearchMethod="SearchMan"
+                                                                   ConvertMethod="ConvertMan"
+                                                                   EnableDropDown="true"
+                                                                   ShowDropDownOnFocus="true"
+                                                                   Items="Manufacturers(newUnit.CategoryId.Value)"
+                                                                   @bind-Value="newUnit.ManufacturerId"
+                                                                   Placeholder="Выберите производителя"
+                                                                   SearchPlaceholder="Поиск">
                                                     <SelectedTemplate Context="manId">
                                                         @LookupMan(manId)?.Name
                                                     </SelectedTemplate>
                                                     <ResultTemplate Context="man">
                                                         @man.Name
                                                     </ResultTemplate>
-                                                </Typeahead>
+                                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                                </BlazoredTypeahead>
                                             </div>
                                         </div>
                                     }
@@ -78,19 +83,22 @@
                                     <div class="form-group row">
                                         <label for="status" class="col-3 col-form-label">Статус</label>
                                         <div class="col">
-                                            <Typeahead SearchMethod="SearchStatus"
-                                                       ConvertMethod="ConvertStatus"
-                                                       Items="statuses"
-                                                       @bind-Value="newUnit.UnitStatusId"
-                                                       Placeholder="Выберите статус"
-                                                       SearchPlaceholder="Поиск">
+                                            <BlazoredTypeahead SearchMethod="SearchStatus"
+                                                               ConvertMethod="ConvertStatus"
+                                                               EnableDropDown="true"
+                                                               ShowDropDownOnFocus="true"
+                                                               Items="statuses"
+                                                               @bind-Value="newUnit.UnitStatusId"
+                                                               Placeholder="Выберите статус"
+                                                               SearchPlaceholder="Поиск">
                                                 <SelectedTemplate Context="statusId">
                                                     @LookupStatus(statusId)?.Name
                                                 </SelectedTemplate>
                                                 <ResultTemplate Context="status">
                                                     @status.Name
                                                 </ResultTemplate>
-                                            </Typeahead>
+                                                <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                            </BlazoredTypeahead>
                                         </div>
                                     </div>
                                     @if (Selected().Location)
@@ -143,19 +151,22 @@
                                         <div class="form-group row">
                                             <label for="empl" class="col-3 col-form-label">Сотрудник</label>
                                             <div class="col">
-                                                <Typeahead SearchMethod="SearchEmp"
-                                                           ConvertMethod="ConvertEmp"
-                                                           Items="employers"
-                                                           @bind-Value="newUnit.EmployerId"
-                                                           Placeholder="Выберите сотрудника"
-                                                           SearchPlaceholder="Поиск">
+                                                <BlazoredTypeahead SearchMethod="SearchEmp"
+                                                                   ConvertMethod="ConvertEmp"
+                                                                   EnableDropDown="true"
+                                                                   ShowDropDownOnFocus="true"
+                                                                   Items="employers"
+                                                                   @bind-Value="newUnit.EmployerId"
+                                                                   Placeholder="Выберите сотрудника"
+                                                                   SearchPlaceholder="Поиск">
                                                     <SelectedTemplate Context="empId">
                                                         @LookupEmp(empId)?.Name
                                                     </SelectedTemplate>
                                                     <ResultTemplate Context="emp">
                                                         @emp.Name
                                                     </ResultTemplate>
-                                                </Typeahead>
+                                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                                </BlazoredTypeahead>
                                             </div>
                                         </div>
                                     }
@@ -166,19 +177,22 @@
                                             <div class="col">
                                                 @if (newUnit.EmployerId == null || newUnit.EmployerId == 0)
                                                 {
-                                                    <Typeahead SearchMethod="SearchDep"
-                                                               ConvertMethod="ConvertDep"
-                                                               Items="departaments"
-                                                               @bind-Value="newUnit.DepartamentId"
-                                                               Placeholder="Выберите отдел"
-                                                               SearchPlaceholder="Поиск">
+                                                    <BlazoredTypeahead SearchMethod="SearchDep"
+                                                                       ConvertMethod="ConvertDep"
+                                                                       EnableDropDown="true"
+                                                                       ShowDropDownOnFocus="true"
+                                                                       Items="departaments"
+                                                                       @bind-Value="newUnit.DepartamentId"
+                                                                       Placeholder="Выберите отдел"
+                                                                       SearchPlaceholder="Поиск">
                                                         <SelectedTemplate Context="depId">
                                                             @LookupDep(depId)?.Name
                                                         </SelectedTemplate>
                                                         <ResultTemplate Context="dep">
                                                             @dep.Name
                                                         </ResultTemplate>
-                                                    </Typeahead>
+                                                        <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                                    </BlazoredTypeahead>
                                                 }
                                                 else
                                                 {
@@ -192,19 +206,22 @@
                                         <div class="form-group row">
                                             <label for="winname" class="col-3 col-form-label">Операционная система</label>
                                             <div class="col">
-                                                <Typeahead SearchMethod="SearchWin"
-                                                           ConvertMethod="ConvertWin"
-                                                           Items="winnames"
-                                                           @bind-Value="newUnit.WinNameId"
-                                                           Placeholder="Выберите операционную систему"
-                                                           SearchPlaceholder="Поиск">
+                                                <BlazoredTypeahead SearchMethod="SearchWin"
+                                                                   ConvertMethod="ConvertWin"
+                                                                   EnableDropDown="true"
+                                                                   ShowDropDownOnFocus="true"
+                                                                   Items="winnames"
+                                                                   @bind-Value="newUnit.WinNameId"
+                                                                   Placeholder="Выберите операционную систему"
+                                                                   SearchPlaceholder="Поиск">
                                                     <SelectedTemplate Context="winId">
                                                         @LookupWin(winId)?.Name
                                                     </SelectedTemplate>
                                                     <ResultTemplate Context="win">
                                                         @win.Name
                                                     </ResultTemplate>
-                                                </Typeahead>
+                                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                                </BlazoredTypeahead>
                                             </div>
                                         </div>
                                     }

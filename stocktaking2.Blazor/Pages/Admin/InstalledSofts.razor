@@ -43,18 +43,18 @@
                                 <tbody>
                                     @foreach (var one in softPaging.InstalledSofts)
                                     {
-                                        <tr>
-                                            <td>@one.Name</td>
-                                            <td>@one.UnitInstalledSofts.Count()</td>
-                                            <td>
-                                                <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditSoft(one))">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteSoft(one))">
-                                                    <i class="far fa-trash-alt"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
+                                    <tr>
+                                        <td>@one.Name</td>
+                                        <td><a href="@("/units?softId=" + one.Id)">@one.UnitInstalledSofts.Count()</a></td>
+                                        <td>
+                                            <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditSoft(one))">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-danger btn-circle" title="Удалить" @onclick="(() => DeleteSoft(one))">
+                                                <i class="far fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
                                     }
                                 </tbody>
                             </table>
@@ -156,23 +156,21 @@
                     </div>
                 </ModalYesNoDialog>
                 <ModalHistory @ref="modalHistory">
-                    <div style="overflow: auto; height:500px;">
-                        @if (softHistories == null)
+                    @if (softHistories == null)
+                    {
+                        <p>Данные загружаются...</p>
+                    }
+                    else
+                    {
+                        @foreach (var cH in softHistories)
                         {
-                            <p>Данные загружаются...</p>
+                            <div class="alert alert-secondary" role="alert">
+                                <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                <p>Пользователь: <b>@cH.UserName</b></p>
+                                <p class="font-weight-bold">@cH.Changes</p>
+                            </div>
                         }
-                        else
-                        {
-                            @foreach (var cH in softHistories)
-                            {
-                                <div class="alert alert-secondary" role="alert">
-                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
-                                    <p>Пользователь: <b>@cH.UserName</b></p>
-                                    <p class="font-weight-bold">@cH.Changes</p>
-                                </div>
-                            }
-                        }
-                    </div>
+                    }
                 </ModalHistory>
             }
         }

@@ -1,4 +1,5 @@
 ﻿@page "/units"
+@implements IDisposable
 @using stocktaking2.Blazor.Data
 @using stocktaking2.Blazor.Data.DB
 @using stocktaking2.Blazor.Helpers
@@ -7,6 +8,7 @@
 @using System.Security.Claims
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> _UserManager
+@inject IJSRuntime JS
 @inject NavigationManager MyNavigationManager
 @inject IHeadElementHelper HeadElementHelper
 @inherits OwningComponentBase<DbService>
@@ -15,11 +17,17 @@
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">Техника</h1>
             <ul class="nav justify-content-end">
+                @if (@context.User.IsInRole("Admin"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/units/add"><i class="fas fa-plus fa-sm"></i> Добавить технику</a>
+                    </li>
+                }
                 <li class="nav-item">
-                    <a class="nav-link active" href="/units/add"><i class="fas fa-plus fa-sm"></i> Добавить технику</a>
+                    <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="Report"><i class="fas fa-download fa-sm"></i> Скачать список</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="/units" @onclick="OpenSettings"><i class="fas fa-cogs fa-sm"></i> Настройки таблицы</a>
+                    <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="OpenSettings"><i class="fas fa-cogs fa-sm"></i> Настройки таблицы</a>
                 </li>
             </ul>
         </div>
@@ -29,6 +37,155 @@
         }
         else
         {
+            <div class="card shadow mb-4 border-left-primary">
+                <a href="#collapseCardFilter" class="@(FiltersCollapse ? "d-block card-header py-3" : "d-block card-header py-3 collapsed")" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseCardFilter">
+                    <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+                </a>
+                <div class="@(FiltersCollapse ? "collapse show" : "collapse")" id="collapseCardFilter">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col pt-2 pb-2">
+                                <span>Статус</span>
+                                <BlazoredTypeahead SearchMethod="@SearchStatus"
+                                                   ConvertMethod="ConvertStatus"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="statuses"
+                                                   @bind-Value="@statFilter"
+                                                   Placeholder="Статус" style="height:50%">
+                                    <SelectedTemplate Context="item">
+                                        @StatusName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>Тип</span>
+                                <BlazoredTypeahead SearchMethod="@SearchCat"
+                                                   ConvertMethod="ConvertCat"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="categories"
+                                                   @bind-Value="@catFilter"
+                                                   Placeholder="Тип">
+                                    <SelectedTemplate Context="item">
+                                        @CatName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>Производитель</span>
+                                <BlazoredTypeahead SearchMethod="@SearchMan"
+                                                   ConvertMethod="ConvertMan"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="manufacturers"
+                                                   @bind-Value="@manFilter"
+                                                   Placeholder="Производитель">
+                                    <SelectedTemplate Context="item">
+                                        @ManName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>Сотрудник</span>
+                                <BlazoredTypeahead SearchMethod="@SearchEmp"
+                                                   ConvertMethod="ConvertEmp"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="employers"
+                                                   @bind-Value="@empFilter"
+                                                   Placeholder="Сотрудник">
+                                    <SelectedTemplate Context="item">
+                                        @EmpName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col pt-2 pb-2">
+                                <span>Отдел</span>
+                                <BlazoredTypeahead SearchMethod="@SearchDep"
+                                                   ConvertMethod="ConvertDep"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="departaments"
+                                                   @bind-Value="@depFilter"
+                                                   Placeholder="Отдел">
+                                    <SelectedTemplate Context="item">
+                                        @DepName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>ОС</span>
+                                <BlazoredTypeahead SearchMethod="@SearchWin"
+                                                   ConvertMethod="ConvertWin"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="winnames"
+                                                   @bind-Value="@winFilter"
+                                                   Placeholder="ОС">
+                                    <SelectedTemplate Context="item">
+                                        @WinName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>ПО</span>
+                                <BlazoredTypeahead SearchMethod="@SearchSoft"
+                                                   ConvertMethod="ConvertSoft"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="softs"
+                                                   @bind-Value="@softFilter"
+                                                   Placeholder="ПО">
+                                    <SelectedTemplate Context="item">
+                                        @SoftName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2 align-self-end">
+                                <a class="btn btn-success btn-block" href="@("/units?depId=" + depFilter + "&empId=" + empFilter + "&winId=" + winFilter + "&softId=" + softFilter + "&catId=" + catFilter + "&manId=" + manFilter + "&statId=" + statFilter)">
+                                    <i class="fa fa-filter"></i> Применить
+                                </a>
+                            </div>
+                            <div class="col pt-2 pb-2 align-self-end">
+                                <a class="btn btn-danger btn-block" href="/units?depId=0&empId=0&winId=0&softId=0&catId=0&manId=0&statId=0">
+                                    <i class="fa fa-ban"></i> Сбросить
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="card shadow mb-4 border-left-primary">
                 <div class="card-body">
                     <div class="row">
@@ -43,43 +200,16 @@
                                                 case "category":
                                                     <th>
                                                         <a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> Тип</a>
-                                                        <select class="form-control form-control-sm" @onchange="@CatFilter">
-                                                            <option value="0" selected="selected">Все</option>
-                                                            @foreach (var option in categories)
-                                                            {
-                                                                <option value="@option.Id">
-                                                                    @option.Name
-                                                                </option>
-                                                            }
-                                                        </select>
                                                     </th>
                                                     break;
                                                 case "departament":
                                                     <th>
                                                         <a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 5 ? 6 : 5))"><i class="@SortClass(5, 6)"></i> Отдел</a>
-                                                        <select class="form-control form-control-sm" @onchange="@DepFilter">
-                                                            <option value="0" selected="selected">Все</option>
-                                                            @foreach (var option in departaments)
-                                                            {
-                                                                <option value="@option.Id">
-                                                                    @option.Name
-                                                                </option>
-                                                            }
-                                                        </select>
                                                     </th>
                                                     break;
                                                 case "employer":
                                                     <th>
                                                         <a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> Сотрудник</a>
-                                                        <select class="form-control form-control-sm" @onchange="@EmpFilter">
-                                                            <option value="0" selected="selected">Все</option>
-                                                            @foreach (var option in employers.Where(x => depFilter == 0 ? true : x.DepartamentId == depFilter))
-                                                            {
-                                                                <option value="@option.Id">
-                                                                    @option.Name
-                                                                </option>
-                                                            }
-                                                        </select>
                                                     </th>
                                                     break;
                                                 case "installdate":
@@ -100,15 +230,6 @@
                                                 case "man":
                                                     <th>
                                                         <a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 15 ? 16 : 15))"><i class="@SortClass(15, 16)"></i> Производитель</a>
-                                                        <select class="form-control form-control-sm" @onchange="@ManFilter">
-                                                            <option value="0" selected="selected">Все</option>
-                                                            @foreach (var option in manufacturers)
-                                                            {
-                                                                <option value="@option.Id">
-                                                                    @option.Name
-                                                                </option>
-                                                            }
-                                                        </select>
                                                     </th>
                                                     break;
                                                 case "model":
@@ -127,18 +248,7 @@
                                                     <th><a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 23 ? 24 : 23))"><i class="@SortClass(23, 24)"></i> Характеристики</a></th>
                                                     break;
                                                 case "status":
-                                                    <th>
-                                                        <a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 25 ? 26 : 25))"><i class="@SortClass(25, 26)"></i> Статус</a>
-                                                        <select class="form-control form-control-sm" @onchange="@StatusFilter">
-                                                            <option value="0" selected="selected">Все</option>
-                                                            @foreach (var option in statuses)
-                                                            {
-                                                                <option value="@option.Id">
-                                                                    @option.Name
-                                                                </option>
-                                                            }
-                                                        </select>
-                                                    </th>
+                                                    <th><a href="units/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 25 ? 26 : 25))"><i class="@SortClass(25, 26)"></i> Статус</a></th>
                                                     break;
                                             }
                                         }
@@ -170,7 +280,7 @@
                                                     case "ip":
                                                         if (@context.User.IsInRole("Admin"))
                                                         {
-                                                            <td>@string.Join(", ", one.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()).ToArray())</td>
+                                                            <td>@string.Join(", ", one.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()))</td>
                                                         }
                                                         break;
                                                     case "location":
@@ -180,7 +290,7 @@
                                                         <td>@one.Manufacturer?.Name</td>
                                                         break;
                                                     case "model":
-                                                        <td>@(!string.IsNullOrEmpty(one.Model) ? one.Model : "Не указана")</td>
+                                                        <td><a href="/unit/@one.Id" class="text-decoration-none">@(!string.IsNullOrEmpty(one.Model) ? one.Model : "Не указана")</a></td>
                                                         break;
                                                     case "netname":
                                                         if (@context.User.IsInRole("Admin"))
@@ -523,6 +633,331 @@
                     </div>
                 </div>
             </ModalWindow>
+            <ModalReport @ref="modalReport" Title="Скачать список техники" OnClick="DownloadReport">
+                <div class="form-group row">
+                    <label for="Hcolor" class="col-4 col-form-label">Цвет заголовка таблицы</label>
+                    <div class="col">
+                        <input id="Hcolor" type="color" class="form-control" @bind="@unitReport.HeaderColor">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Текст заголовка таблицы</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="HboldCheck" @bind="@unitReport.HeaderBold">
+                            <label class="form-check-label" for="HboldCheck">
+                                Жирный текст
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Текущий фильтр</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Filter" @bind="@unitReport.Filter">
+                            <label class="form-check-label" for="Filter">
+                                Применить
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Тип техники</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Category" @bind="@unitReport.Category">
+                            <label class="form-check-label" for="Category">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Производитель</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Manufacturer" @bind="@unitReport.Manufacturer">
+                            <label class="form-check-label" for="Manufacturer">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Модель</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Model" @bind="@unitReport.Model">
+                            <label class="form-check-label" for="Model">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Статус</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="UnitStatus" @bind="@unitReport.UnitStatus">
+                            <label class="form-check-label" for="UnitStatus">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Местоположение</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Location" @bind="@unitReport.Location">
+                            <label class="form-check-label" for="Location">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Инвентарный номер</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="InventId" @bind="@unitReport.InventId">
+                            <label class="form-check-label" for="InventId">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Серийный номер</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Serial" @bind="@unitReport.Serial">
+                            <label class="form-check-label" for="Serial">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Дата приобретения</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="BuyDate" @bind="@unitReport.BuyDate">
+                            <label class="form-check-label" for="BuyDate">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Дата установки</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="InstallDate" @bind="@unitReport.InstallDate">
+                            <label class="form-check-label" for="InstallDate">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Сотрудник</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Employer" @bind="@unitReport.Employer">
+                            <label class="form-check-label" for="Employer">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Отдел</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Departament" @bind="@unitReport.Departament">
+                            <label class="form-check-label" for="Departament">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Операционная система</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="WinName" @bind="@unitReport.WinName">
+                            <label class="form-check-label" for="WinName">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Процессор</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Processor" @bind="@unitReport.Processor">
+                            <label class="form-check-label" for="Processor">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Материнская плата</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Motherboard" @bind="@unitReport.Motherboard">
+                            <label class="form-check-label" for="Motherboard">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Оперативная память</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="DDR" @bind="@unitReport.DDR">
+                            <label class="form-check-label" for="DDR">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Характеристики</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Specs" @bind="@unitReport.Specs">
+                            <label class="form-check-label" for="Specs">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Модель картриджа</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="CartridgeModel" @bind="@unitReport.CartridgeModel">
+                            <label class="form-check-label" for="CartridgeModel">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Количество картриджей</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="CartridgeCount" @bind="@unitReport.CartridgeCount">
+                            <label class="form-check-label" for="CartridgeCount">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Ремонтные работы</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ServiceWorks" @bind="@unitReport.ServiceWorks">
+                            <label class="form-check-label" for="ServiceWorks">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                @if (@context.User.IsInRole("Admin"))
+                {
+                    <div class="form-group row">
+                        <div class="col-4">Установленое ПО</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="UnitInstalledSofts" @bind="@unitReport.UnitInstalledSofts">
+                                <label class="form-check-label" for="UnitInstalledSofts">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">IP адреса</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="IPAdresses" @bind="@unitReport.IPAdresses">
+                                <label class="form-check-label" for="IPAdresses">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Сетевое имя</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="NetName" @bind="@unitReport.NetName">
+                                <label class="form-check-label" for="NetName">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Пароль BIOS</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="BiosPass" @bind="@unitReport.BiosPass">
+                                <label class="form-check-label" for="BiosPass">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Аккаунты Windows</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="WinAccounts" @bind="@unitReport.WinAccounts">
+                                <label class="form-check-label" for="WinAccounts">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">RDP аккаунты</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="RdpConnects" @bind="@unitReport.RdpConnects">
+                                <label class="form-check-label" for="RdpConnects">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Комментарий</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="Comment" @bind="@unitReport.Comment">
+                                <label class="form-check-label" for="Comment">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <div class="form-group row">
+                    <label for="Ccolor" class="col-4 col-form-label">Цвет строк таблицы</label>
+                    <div class="col">
+                        <input id="Ccolor" type="color" class="form-control" @bind="@unitReport.CellsColor">
+                    </div>
+                </div>
+            </ModalReport>
         }
     </Authorized>
     <NotAuthorized>
@@ -535,6 +970,7 @@
     ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
     ModalWindow tableSettings;
     UserSettings userSettings;
+    UnitReport unitReport;
     int currentPage = 1;
     int VisiblePages = 5;
     int Start;
@@ -542,8 +978,12 @@
     int? currentSort;
     int pageSize;
     UnitsPaging unitsPaging;
-    Dictionary<int, string> tableCollumns = new Dictionary<int, string>();
+    Dictionary<int, string> tableCollumns;
+    ModalReport modalReport;
     const string quote = "\"";
+
+    bool FiltersCollapse = false;
+
     Dictionary<string, string> Collumns = new Dictionary<string, string>
     {
         ["category"] = "Тип",
@@ -601,6 +1041,10 @@
     int manFilter = 0;
     List<UnitStatus> statuses;
     int statFilter = 0;
+    List<WinName> winnames;
+    int winFilter = 0;
+    List<InstalledSoft> softs;
+    int softFilter = 0;
 
     private bool HasPrevious()
     {
@@ -624,17 +1068,48 @@
         { Start = unitsPaging.TotalPages - VisiblePages; }
         if (Start < 1)
         { Start = 1; }
+        StateHasChanged();
     }
 
     protected override async Task OnInitializedAsync()
     {
         await HeadElementHelper.SetTitleAsync("Техника - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
+        GetQueryStringValues();
         await GetData();
+        MyNavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        GetQueryStringValues();
+        await GetData();
+    }
+
+    public void Dispose()
+    {
+        MyNavigationManager.LocationChanged -= HandleLocationChanged;
+    }
+
+    void GetQueryStringValues()
+    {
+        MyNavigationManager.TryGetQueryString<int>("depId", out depFilter);
+        MyNavigationManager.TryGetQueryString<int>("empId", out empFilter);
+        MyNavigationManager.TryGetQueryString<int>("winId", out winFilter);
+        MyNavigationManager.TryGetQueryString<int>("softId", out softFilter);
+        MyNavigationManager.TryGetQueryString<int>("catId", out catFilter);
+        MyNavigationManager.TryGetQueryString<int>("manId", out manFilter);
+        MyNavigationManager.TryGetQueryString<int>("statId", out statFilter);
+        if (depFilter > 0 || empFilter > 0 || winFilter > 0 || softFilter > 0
+            || catFilter > 0 || manFilter > 0 || statFilter > 0)
+        {
+            FiltersCollapse = true;
+        }
     }
 
     public async Task GetData()
     {
+        tableCollumns = new Dictionary<int, string>();
         userSettings = await @Service.GetSettings(_UserManager.GetUserId(CurrentUser), CurrentUser.IsInRole("Admin"));
         if (currentSort == null) currentSort = userSettings.SortOrder;
         pageSize = userSettings.RowsCount;
@@ -656,19 +1131,21 @@
         employers = await @Service.GetEmployersAdd();
         manufacturers = await @Service.GetManufacturersAdd();
         statuses = await @Service.GetStatusesForAdd();
-        GetUnits();
+        winnames = await @Service.GetWinNamesAdd();
+        softs = await Service.GetInstalledSofts();
+        await GetUnits();
     }
 
-    void GetUnits()
+    async Task GetUnits()
     {
-        unitsPaging = @Service.unitsPaging(currentSort ?? 1, currentPage, userSettings.RowsCount, catFilter, depFilter, empFilter, manFilter, statFilter);
+        unitsPaging = await @Service.unitsPaging(currentSort ?? 1, currentPage, userSettings.RowsCount, catFilter, depFilter, empFilter, manFilter, statFilter, winFilter, softFilter);
         CalcPages();
     }
 
-    public void SetPage(int page)
+    public async void SetPage(int page)
     {
         currentPage = page;
-        GetUnits();
+        await GetUnits();
     }
 
     void OpenSettings()
@@ -703,50 +1180,15 @@
         {
             currentSort = userSettings.SortOrder;
             currentPage = 1;
-            GetUnits();
+            await GetUnits();
         }
     }
 
-    void CatFilter(ChangeEventArgs e)
-    {
-        catFilter = Convert.ToInt32(e.Value);
-        currentPage = 1;
-        GetUnits();
-    }
-
-    void DepFilter(ChangeEventArgs e)
-    {
-        depFilter = Convert.ToInt32(e.Value);
-        currentPage = 1;
-        GetUnits();
-    }
-
-    void EmpFilter(ChangeEventArgs e)
-    {
-        empFilter = Convert.ToInt32(e.Value);
-        currentPage = 1;
-        GetUnits();
-    }
-
-    void ManFilter(ChangeEventArgs e)
-    {
-        manFilter = Convert.ToInt32(e.Value);
-        currentPage = 1;
-        GetUnits();
-    }
-
-    void StatusFilter(ChangeEventArgs e)
-    {
-        statFilter = Convert.ToInt32(e.Value);
-        currentPage = 1;
-        GetUnits();
-    }
-
-    void SetSort(int sort)
+    async void SetSort(int sort)
     {
         currentSort = sort;
         currentPage = 1;
-        GetUnits();
+        await GetUnits();
     }
 
     string SortClass(int sort1, int sort2)
@@ -768,5 +1210,174 @@
     void OpenUnit(Unit unit)
     {
         MyNavigationManager.NavigateTo("unit/" + unit.Id);
+    }
+
+    public Task<IEnumerable<UnitStatus>> SearchStatus(string searchText)
+    {
+        var result = statuses.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<UnitStatus>>(result);
+    }
+
+    public int ConvertStatus(UnitStatus item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string StatusName(int id)
+    {
+        return id > 0 ? statuses.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Category>> SearchCat(string searchText)
+    {
+        var result = categories.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Category>>(result);
+    }
+
+    public int ConvertCat(Category item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string CatName(int id)
+    {
+        return id > 0 ? categories.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Manufacturer>> SearchMan(string searchText)
+    {
+        var result = manufacturers.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Manufacturer>>(result);
+    }
+
+    public int ConvertMan(Manufacturer item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string ManName(int id)
+    {
+        return id > 0 ? manufacturers.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Employer>> SearchEmp(string searchText)
+    {
+        var result = employers.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Employer>>(result);
+    }
+
+    public int ConvertEmp(Employer item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string EmpName(int id)
+    {
+        return id > 0 ? employers.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Departament>> SearchDep(string searchText)
+    {
+        var result = departaments.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Departament>>(result);
+    }
+
+    public int ConvertDep(Departament item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string DepName(int id)
+    {
+        return id > 0 ? departaments.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<WinName>> SearchWin(string searchText)
+    {
+        var result = winnames.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<WinName>>(result);
+    }
+
+    public int ConvertWin(WinName item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string WinName(int id)
+    {
+        return id > 0 ? winnames.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<InstalledSoft>> SearchSoft(string searchText)
+    {
+        var result = softs.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<InstalledSoft>>(result);
+    }
+
+    public int ConvertSoft(InstalledSoft item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string SoftName(int id)
+    {
+        return id > 0 ? softs.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    void Report()
+    {
+        bool secure = CurrentUser.IsInRole("Admin");
+        unitReport = new UnitReport
+        {
+            CellsColor = "#b7e1cd",
+            HeaderBold = true,
+            HeaderColor = "#ffbf00",
+            Filter = true,
+            BiosPass = secure,
+            Comment = secure,
+            IPAdresses = secure,
+            UnitInstalledSofts = secure,
+            NetName = secure,
+            WinAccounts = secure,
+            RdpConnects = secure,
+            BuyDate = true,
+            CartridgeCount = true,
+            CartridgeModel = true,
+            Category = true,
+            DDR = true,
+            Departament = true,
+            Employer = true,
+            InstallDate = true,
+            InventId = true,
+            Location = true,
+            Manufacturer = true,
+            Model = true,
+            Motherboard = true,
+            Processor = true,
+            Serial = true,
+            ServiceWorks = true,
+            Specs = true,
+            UnitStatus = true,
+            WinName = true
+        };
+        modalReport.Show();
+    }
+
+    void DownloadReport()
+    {
+        modalReport.StartWork();
+        if (unitReport.Filter)
+        {
+            unitReport.catFilter = catFilter;
+            unitReport.depFilter = depFilter;
+            unitReport.empFilter = empFilter;
+            unitReport.manFilter = manFilter;
+            unitReport.statFilter = statFilter;
+            unitReport.winFilter = winFilter;
+            unitReport.softFilter = softFilter;
+        }
+        var report = @Service.UnitsReport(unitReport);
+        JS.SaveAs($"units-{DateTime.Now.ToString("d")}.xlsx", report);
+        modalReport.Show();
     }
 }

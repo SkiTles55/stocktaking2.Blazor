@@ -4,7 +4,6 @@
 @using stocktaking2.Blazor.Helpers
 @using System.Security.Claims
 @using System.IO
-@using LoreSoft.Blazor.Controls
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JS
 @inject IHeadElementHelper HeadElementHelper
@@ -744,20 +743,23 @@
                 </ModalWindow>
                 <ModalWindow @ref="selectModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveSelectListChanges())">
                     <div class="form-group">
-                        <Typeahead SearchMethod="SearchSL"
-                                   ConvertMethod="ConvertSL"
-                                   Items="SelectList"
-                                   @bind-Value="selected"
-                                   Placeholder="@helptext"
-                                   SearchPlaceholder="Поиск"
-                                   AllowClear="false">
+                        <BlazoredTypeahead SearchMethod="SearchSL"
+                                           ConvertMethod="ConvertSL"
+                                           EnableDropDown="true"
+                                           ShowDropDownOnFocus="true"
+                                           Items="SelectList"
+                                           @bind-Value="selected"
+                                           Placeholder="@helptext"
+                                           SearchPlaceholder="Поиск"
+                                           AllowClear="false">
                             <SelectedTemplate Context="slId">
                                 @LookupSL(slId).Value
                             </SelectedTemplate>
                             <ResultTemplate Context="sl">
                                 @sl.Value
                             </ResultTemplate>
-                        </Typeahead>
+                            <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                        </BlazoredTypeahead>
                     </div>
                 </ModalWindow>
                 <ModalWindow @ref="dateModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveDateInputChanges())">

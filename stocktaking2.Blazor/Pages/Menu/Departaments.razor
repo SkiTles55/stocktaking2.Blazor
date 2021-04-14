@@ -54,8 +54,8 @@
                                 {
                                     <tr>
                                         <td>@one.Name</td>
-                                        <td>@one.Employers.Count</td>
-                                        <td>@one.Units.Count</td>
+                                        <td><a href="@("/employers?depId=" + one.Id)">@one.Employers.Count</a></td>
+                                        <td><a href="@("/units?depId=" + one.Id)">@one.Units.Count</a></td>
                                         @if (@context.User.IsInRole("Admin"))
                                         {
                                             <td>
@@ -183,41 +183,42 @@
                             <p style="color:red">К этому отделу привязаны сотрудники.</p>
                         </div>
                         <div class="form-group">
-                            <Typeahead SearchMethod="SearchDep"
-                                       ConvertMethod="ConvertDep"
-                                       Items="departamentsAdd.Where(x => x.Id != forDel.Id).ToList()"
-                                       @bind-Value="newcat"
-                                       Placeholder="Выберите новый отдел для них"
-                                       SearchPlaceholder="Поиск"
-                                       AllowClear="false">
+                            <BlazoredTypeahead SearchMethod="SearchDep"
+                                               ConvertMethod="ConvertDep"
+                                               EnableDropDown="true"
+                                               ShowDropDownOnFocus="true"
+                                               Items="departamentsAdd.Where(x => x.Id != forDel.Id).ToList()"
+                                               @bind-Value="newcat"
+                                               Placeholder="Выберите новый отдел для них"
+                                               SearchPlaceholder="Поиск"
+                                               AllowClear="false">
                                 <SelectedTemplate Context="depId">
                                     @LookupDep(depId)?.Name
                                 </SelectedTemplate>
                                 <ResultTemplate Context="dep">
                                     @dep.Name
                                 </ResultTemplate>
-                            </Typeahead>
+                                <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                            </BlazoredTypeahead>
                         </div>
                     }
                 </ModalYesNoDialog>
                 <ModalHistory @ref="modalHistory">
-                    <div style="overflow: auto; max-height:500px;">
-                        @if (departamentHistories == null)
+                    @if (departamentHistories == null)
+                    {
+                        <p>Данные загружаются...</p>
+                    }
+                    else
+                    {
+                        @foreach (var cH in departamentHistories)
                         {
-                            <p>Данные загружаются...</p>
+                            <div class="alert alert-secondary" role="alert">
+                                <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                <p>Пользователь: <b>@cH.UserName</b></p>
+                                <p class="font-weight-bold">@cH.Changes</p>
+                            </div>
                         }
-                        else
-                        {
-                            @foreach (var cH in departamentHistories)
-                            {
-                                <div class="alert alert-secondary" role="alert">
-                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
-                                    <p>Пользователь: <b>@cH.UserName</b></p>
-                                    <p class="font-weight-bold">@cH.Changes</p>
-                                </div>
-                            }
-                        }
-                    </div>
+                    }
                 </ModalHistory>
             }
             <ModalReport @ref="modalReport" Title="Скачать список отделов" OnClick="DownloadReport">

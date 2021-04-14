@@ -1,14 +1,15 @@
 ﻿@page "/employers"
+@implements IDisposable
 @using stocktaking2.Blazor.Data
 @using stocktaking2.Blazor.Data.DB
 @using System.Security.Claims
 @using stocktaking2.Blazor.Helpers
-@using LoreSoft.Blazor.Controls
 @using Microsoft.AspNetCore.Identity;
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> _UserManager
 @inject IJSRuntime JS
 @inject IHeadElementHelper HeadElementHelper
+@inject NavigationManager MyNavigationManager
 @inherits OwningComponentBase<DbService>
 <AuthorizeView>
     <Authorized>
@@ -18,14 +19,14 @@
                 @if (@context.User.IsInRole("Admin"))
                 {
                     <li class="nav-item">
-                        <a class="nav-link active" href="/employers" @onclick="AddNewEmployer"><i class="fas fa-plus fa-sm"></i> Добавить сотрудника</a>
+                        <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="AddNewEmployer"><i class="fas fa-plus fa-sm"></i> Добавить сотрудника</a>
                     </li>
                 }
                 <li class="nav-item">
-                    <a class="nav-link active" href="/employers" @onclick="Report"><i class="fas fa-download fa-sm"></i> Скачать список</a>
+                    <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="Report"><i class="fas fa-download fa-sm"></i> Скачать список</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link active" href="/employers" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
+                    <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
                 </li>
             </ul>
         </div>
@@ -47,10 +48,10 @@
                                     <th>
                                         <a href="employers/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> Отдел</a>
                                         <select class="form-control form-control-sm" @onchange="@DepFilter">
-                                            <option value="0" selected="selected">Все</option>
+                                            <option value="0" selected="@(depFilter == 0 ? "selected" : null)">Все</option>
                                             @foreach (var option in departaments)
                                             {
-                                                <option value="@option.Id">
+                                                <option value="@option.Id" selected="@(depFilter == option.Id ? "selected" : null)">
                                                     @option.Name
                                                 </option>
                                             }
@@ -74,7 +75,7 @@
                                         <td>@one.FatherName</td>
                                         <td>@one.Departament.Name</td>
                                         <td>@one.Post</td>
-                                        <td>@one.Units.Count</td>
+                                        <td><a href="@("/units?empId=" + one.Id)">@one.Units.Count</a></td>
                                         <td>@string.Join(", ", one.Emails.OrderBy(a => a.Login).Select(x => x.Login).ToArray())</td>
                                         @if (@context.User.IsInRole("Admin"))
                                         {
@@ -182,20 +183,23 @@
                         <input class="form-control" id="sName" type="text" placeholder="Отчество" @bind="ct.FatherName" />
                     </div>
                     <div class="form-group">
-                        <Typeahead SearchMethod="SearchDep"
-                                   ConvertMethod="ConvertDep"
-                                   Items="departaments"
-                                   @bind-Value="ct.DepartamentId"
-                                   Placeholder="Выберите отдел"
-                                   SearchPlaceholder="Поиск"
-                                   AllowClear="false">
+                        <BlazoredTypeahead SearchMethod="SearchDep"
+                                           ConvertMethod="ConvertDep"
+                                           EnableDropDown="true"
+                                           ShowDropDownOnFocus="true"
+                                           Items="departaments"
+                                           @bind-Value="ct.DepartamentId"
+                                           Placeholder="Выберите отдел"
+                                           SearchPlaceholder="Поиск"
+                                           AllowClear="false">
                             <SelectedTemplate Context="depId">
                                 @LookupDep(depId)?.Name
                             </SelectedTemplate>
                             <ResultTemplate Context="dep">
                                 @dep.Name
                             </ResultTemplate>
-                        </Typeahead>
+                            <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                        </BlazoredTypeahead>
                     </div>
                     <div class="form-group">
                         <input class="form-control" type="text" placeholder="Должность" @bind="ct.Post" />
@@ -216,23 +220,21 @@
                     </div>
                 </ModalYesNoDialog>
                 <ModalHistory @ref="modalHistory">
-                    <div style="overflow: auto; max-height:500px;">
-                        @if (employersHistories == null)
+                    @if (employersHistories == null)
+                    {
+                        <p>Данные загружаются...</p>
+                    }
+                    else
+                    {
+                        @foreach (var cH in employersHistories)
                         {
-                            <p>Данные загружаются...</p>
+                            <div class="alert alert-secondary" role="alert">
+                                <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                <p>Пользователь: <b>@cH.UserName</b></p>
+                                <p class="font-weight-bold">@cH.Changes</p>
+                            </div>
                         }
-                        else
-                        {
-                            @foreach (var cH in employersHistories)
-                            {
-                                <div class="alert alert-secondary" role="alert">
-                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
-                                    <p>Пользователь: <b>@cH.UserName</b></p>
-                                    <p class="font-weight-bold">@cH.Changes</p>
-                                </div>
-                            }
-                        }
-                    </div>
+                    }
                 </ModalHistory>
             }
             <ModalReport @ref="modalReport" Title="Скачать список сотрудников" OnClick="DownloadReport">
@@ -375,13 +377,32 @@
         { Start = empPaging.TotalPages - VisiblePages; }
         if (Start < 1)
         { Start = 1; }
+        StateHasChanged();
     }
 
     protected override async Task OnInitializedAsync()
     {
         await HeadElementHelper.SetTitleAsync("Сотрудники - Учет техники");
         CurrentUser = (await authenticationStateTask).User;
+        GetQueryStringValues();
         await GetData();
+        MyNavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        GetQueryStringValues();
+        await GetData();
+    }
+
+    public void Dispose()
+    {
+        MyNavigationManager.LocationChanged -= HandleLocationChanged;
+    }
+
+    void GetQueryStringValues()
+    {
+        MyNavigationManager.TryGetQueryString<int>("depId", out depFilter);
     }
 
     public async Task GetData()

@@ -45,7 +45,7 @@
                                     {
                                         <tr>
                                             <td>@one.Name</td>
-                                            <td>@one.Units.Count</td>
+                                            <td><a href="@("/units?statId=" + one.Id)">@one.Units.Count</a></td>
                                             <td>
                                                 <button class="btn btn-primary btn-circle" title="Редактировать" @onclick="(() => EditStatus(one))">
                                                     <i class="fas fa-edit"></i>
@@ -184,23 +184,21 @@
                     }
                 </ModalYesNoDialog>
                 <ModalHistory @ref="modalHistory">
-                    <div style="overflow: auto; height:500px;">
-                        @if (statusHistories == null)
+                    @if (statusHistories == null)
+                    {
+                        <p>Данные загружаются...</p>
+                    }
+                    else
+                    {
+                        @foreach (var cH in statusHistories)
                         {
-                            <p>Данные загружаются...</p>
+                            <div class="alert alert-secondary" role="alert">
+                                <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                <p>Пользователь: <b>@cH.UserName</b></p>
+                                <p class="font-weight-bold">@cH.Changes</p>
+                            </div>
                         }
-                        else
-                        {
-                            @foreach (var cH in statusHistories)
-                            {
-                                <div class="alert alert-secondary" role="alert">
-                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
-                                    <p>Пользователь: <b>@cH.UserName</b></p>
-                                    <p class="font-weight-bold">@cH.Changes</p>
-                                </div>
-                            }
-                        }
-                    </div>
+                    }
                 </ModalHistory>
             }
         }

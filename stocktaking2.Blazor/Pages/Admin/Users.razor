@@ -117,23 +117,21 @@
                     </div>
                 </ModalYesNoDialog>
                 <ModalHistory @ref="modalHistory">
-                    <div style="overflow: auto; max-height:500px;">
-                        @if (userHistories == null)
+                    @if (userHistories == null)
+                    {
+                        <p>Данные загружаются...</p>
+                    }
+                    else
+                    {
+                        @foreach (var cH in userHistories)
                         {
-                            <p>Данные загружаются...</p>
+                            <div class="alert alert-secondary" role="alert">
+                                <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                                <p>Пользователь: <b>@cH.UserName</b></p>
+                                <p class="font-weight-bold">@cH.Changes</p>
+                            </div>
                         }
-                        else
-                        {
-                            @foreach (var cH in userHistories)
-                            {
-                                <div class="alert alert-secondary" role="alert">
-                                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
-                                    <p>Пользователь: <b>@cH.UserName</b></p>
-                                    <p class="font-weight-bold">@cH.Changes</p>
-                                </div>
-                            }
-                        }
-                    </div>
+                    }
                 </ModalHistory>
             }
         }

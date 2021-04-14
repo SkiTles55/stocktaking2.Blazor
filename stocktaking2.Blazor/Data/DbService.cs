@@ -6,6 +6,7 @@ using stocktaking2.Blazor.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Net;
@@ -499,7 +500,7 @@ namespace stocktaking2.Blazor.Data
             _context.UnitHistories.Add(new UnitHistory { Secure = false, UnitId = unitid, UserName = username, Change = $"Добавлен новый файл {name}" });
             _context.SaveChanges();
         }
-        public UnitsPaging unitsPaging(int sort, int page, int pageSize, int cat, int dep, int emp, int man, int stat)
+        public Task<UnitsPaging> unitsPaging(int sort, int page, int pageSize, int cat, int dep, int emp, int man, int stat, int win, int soft)
         {
             UnitsPaging unitsPaging = new UnitsPaging();
             unitsPaging.Units = new List<Unit>();
@@ -509,6 +510,8 @@ namespace stocktaking2.Blazor.Data
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
                 .Where(x => man == 0 ? true : x.ManufacturerId == man)
                 .Where(x => stat == 0 ? true : x.UnitStatusId == stat)
+                .Where(x => win == 0 ? true : x.WinNameId == win)
+                .Where(x => soft == 0 ? true : x.UnitInstalledSofts.Any(x => x.InstalledSoftId == soft))
                 .Count();
             unitsPaging.TotalPages = (int)Math.Ceiling(unitsPaging.TotalCount / (double)pageSize);
             var skip = page == 1 ? 0 : (page - 1) * pageSize;
@@ -526,6 +529,8 @@ namespace stocktaking2.Blazor.Data
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
                 .Where(x => man == 0 ? true : x.ManufacturerId == man)
                 .Where(x => stat == 0 ? true : x.UnitStatusId == stat)
+                .Where(x => win == 0 ? true : x.WinNameId == win)
+                .Where(x => soft == 0 ? true : x.UnitInstalledSofts.Any(x => x.InstalledSoftId == soft))
                 .OrderByDescending(UnitOrderDict[sort])
                 .Skip(skip).Take(pageSize).ToList();
 			}
@@ -543,10 +548,12 @@ namespace stocktaking2.Blazor.Data
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
                 .Where(x => man == 0 ? true : x.ManufacturerId == man)
                 .Where(x => stat == 0 ? true : x.UnitStatusId == stat)
+                .Where(x => win == 0 ? true : x.WinNameId == win)
+                .Where(x => soft == 0 ? true : x.UnitInstalledSofts.Any(x => x.InstalledSoftId == soft))
                 .OrderBy(UnitOrderDict[sort])
                 .Skip(skip).Take(pageSize).ToList();
             }
-            return unitsPaging;
+            return Task.FromResult(unitsPaging);
         }
 
         private bool IsEven(int a)
@@ -1096,6 +1103,13 @@ namespace stocktaking2.Blazor.Data
                 return Task.FromResult(false);
             }
             return Task.FromResult(true);
+        }
+
+        public Task<List<InstalledSoft>> GetInstalledSofts()
+        {
+            List<InstalledSoft> softs = new List<InstalledSoft>();
+            softs = _context.InstalledSofts.OrderBy(x => x.Name).ToList();
+            return Task.FromResult(softs);
         }
         #endregion
 
@@ -2243,20 +2257,348 @@ namespace stocktaking2.Blazor.Data
         #endregion
 
         #region Index
-        public Task<ChartData> GetCharts()
+        public Task<IndexPageData> GetIndexPageData()
         {
-            ChartData chartData = new ChartData();
-            chartData.depUnitsBar = new Dictionary<string, double>();
-            chartData.catUnitsPie = new Dictionary<string, double>();
+            IndexPageData data = new IndexPageData();
+            data.UnitsCount = _context.Units.Count();
+            data.Last5Units = _context.Units.OrderByDescending(x => x.DateCreated).Take(5).ToList();
+            var SW = _context.ServiceWorks.OrderByDescending(x => x.WorkDate).ToList().Where(x => x.WorkDate >= DateTime.Now.AddMonths(-1));
+            data.ServiceWorksMounthCount = SW.Count();
+            data.Last5ServiceWorks = SW.Take(5).ToList();
+            data.depUnitsBar = new Dictionary<string, double>();
+            data.catUnitsPie = new Dictionary<string, double>();
             foreach (var dep in _context.Departaments.Include(x => x.Units).Where(x => x.Units.Count > 0).OrderBy(x => x.Name))
-                chartData.depUnitsBar.Add(dep.Name, dep.Units.Count);
+                data.depUnitsBar.Add(dep.Name, dep.Units.Count);
             foreach (var cat in _context.Categories.Include(x => x.Units).Where(x => x.Units.Count > 0).OrderBy(x => x.Name))
-                chartData.catUnitsPie.Add(cat.Name, cat.Units.Count);
-            return Task.FromResult(chartData);
+                data.catUnitsPie.Add(cat.Name, cat.Units.Count);
+            return Task.FromResult(data);
         }
         #endregion
 
         #region Reports
+        public byte[] UnitsReport(UnitReport report)
+        {
+            using (var package = new ExcelPackage())
+            {
+                var worksheet = package.Workbook.Worksheets.Add("Техника");
+                int count = 0;
+                int row = 1;
+                if (report.Category)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Тип техники";
+                }
+                if (report.Manufacturer)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Производитель";
+                }
+                if (report.Model)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Модель";
+                }
+                if (report.UnitStatus)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Статус";
+                }
+                if (report.Location)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Местоположение";
+                }
+                if (report.InventId)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Инвентарный номер";
+                }
+                if (report.Serial)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Серийный номер";
+                }
+                if (report.BuyDate)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Дата приобретения";
+                }
+                if (report.InstallDate)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Дата установки";
+                }
+                if (report.Employer)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Сотрудник";
+                }
+                if (report.Departament)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Отдел";
+                }
+                if (report.WinName)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Операционная система";
+                }
+                if (report.Processor)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Процессор";
+                }
+                if (report.Motherboard)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Материнская плата";
+                }
+                if (report.DDR)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Оперативная память";
+                }
+                if (report.Specs)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Характеристики";
+                }
+                if (report.CartridgeModel)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Модель картриджа";
+                }
+                if (report.CartridgeCount)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Количество картриджей";
+                }
+                if (report.ServiceWorks)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Ремонтные работы";
+                }
+                if (report.UnitInstalledSofts)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Установленое ПО";
+                }
+                if (report.IPAdresses)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "IP адреса";
+                }
+                if (report.NetName)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Сетевое имя";
+                }
+                if (report.BiosPass)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Пароль BIOS";
+                }
+                if (report.WinAccounts)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Аккаунты Windows";
+                }
+                if (report.RdpConnects)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "RDP аккаунты";
+                }
+                if (report.Comment)
+                {
+                    count++;
+                    worksheet.Cells[1, count].Value = "Комментарий";
+                }
+                using (var range = worksheet.Cells[1, 1, 1, count])
+                {
+                    if (report.HeaderBold) range.Style.Font.Bold = true;
+                    range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                    range.Style.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml(report.HeaderColor));
+                    range.Style.Border.Top.Style = ExcelBorderStyle.Thick;
+                    range.Style.Border.Left.Style = ExcelBorderStyle.Thick;
+                    range.Style.Border.Right.Style = ExcelBorderStyle.Thick;
+                    range.Style.Border.Bottom.Style = ExcelBorderStyle.Thick;
+                }
+                foreach (var unit in _context.Units
+                .Include(a => a.Category)
+                .Include(s => s.Manufacturer)
+                .Include(d => d.UnitStatus)
+                .Include(f => f.Employer)
+                .Include(g => g.WinName)
+                .Include(h => h.Departament)
+                .Include(j => j.UnitInstalledSofts)
+                    .ThenInclude(x => x.InstalledSoft)
+                .Include(a => a.IPAdresses)
+                .Include(s => s.WinAccounts)
+                .Include(x => x.RdpConnects)
+                .Include(x => x.ServiceWorks)
+                .Where(x => report.catFilter > 0 ? x.CategoryId == report.catFilter : true)
+                .Where(x => report.depFilter > 0 ? x.DepartamentId == report.depFilter : true)
+                .Where(x => report.empFilter > 0 ? x.EmployerId == report.empFilter : true)
+                .Where(x => report.manFilter > 0 ? x.ManufacturerId == report.manFilter : true)
+                .Where(x => report.statFilter > 0 ? x.UnitStatusId == report.statFilter : true)
+                .Where(x => report.winFilter > 0 ? x.WinNameId == report.winFilter : true)
+                .Where(x => report.softFilter > 0 ? x.UnitInstalledSofts.Any(y => y.InstalledSoftId == report.softFilter) : true))
+                {
+                    row++;
+                    int celc = 0;
+                    if (report.Category)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Category.Name;
+                    }
+                    if (report.Manufacturer)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Manufacturer.Name;
+                    }
+                    if (report.Model)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Model;
+                    }
+                    if (report.UnitStatus)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.UnitStatus.Name;
+                    }
+                    if (report.Location)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Location;
+                    }
+                    if (report.InventId)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.InventId;
+                    }
+                    if (report.Serial)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Serial;
+                    }
+                    if (report.BuyDate)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.BuyDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"));
+                    }
+                    if (report.InstallDate)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.InstallDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"));
+                    }
+                    if (report.Employer)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Employer?.Name;
+                    }
+                    if (report.Departament)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Departament?.Name;
+                    }
+                    if (report.WinName)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.WinName?.Name;
+                    }
+                    if (report.Processor)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Processor;
+                    }
+                    if (report.Motherboard)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Motherboard;
+                    }
+                    if (report.DDR)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.DDR;
+                    }
+                    if (report.Specs)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Specs;
+                    }
+                    if (report.CartridgeModel)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.CartridgeModel;
+                    }
+                    if (report.CartridgeCount)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.CartridgeCount;
+                    }
+                    if (report.ServiceWorks)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = String.Join("\r\n", unit.ServiceWorks.Select(x => x.WorkDate.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")) + " | " + x.WorkName + " | " + x.WorkDescr));
+                    }
+                    if (report.UnitInstalledSofts)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = String.Join("\r\n", unit.UnitInstalledSofts.Select(x => x.InstalledSoft.Name));
+                    }
+                    if (report.IPAdresses)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = String.Join("\r\n", unit.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()));
+                    }
+                    if (report.NetName)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.NetName;
+                    }
+                    if (report.BiosPass)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.BiosPass;
+                    }
+                    if (report.WinAccounts)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = String.Join("\r\n", unit.WinAccounts.Select(x => "Логин: " + x.Login + " | Пароль: " + x.Password));
+                    }
+                    if (report.RdpConnects)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = String.Join("\r\n", unit.RdpConnects.Select(x => "IP адрес: " + x.IPAddress + " | Логин: " + x.Login + " | Пароль: " + x.Password + " | Комментарий: " + x.Comment));
+                    }
+                    if (report.Comment)
+                    {
+                        celc++;
+                        worksheet.Cells[row, celc].Value = unit.Comment;
+                    }
+                }
+                for (int celc2 = 1; celc2 < count + 1; celc2++)
+                {
+                    worksheet.Column(celc2).AutoFit();
+                    using (var range = worksheet.Cells[2, celc2, row, celc2])
+                    {
+                        range.Style.Fill.PatternType = ExcelFillStyle.Solid;
+                        range.Style.Fill.BackgroundColor.SetColor(ColorTranslator.FromHtml(report.CellsColor));
+                        range.Style.WrapText = true;
+                        range.Style.Border.Right.Style = ExcelBorderStyle.Thick;
+                        range.Style.Border.Bottom.Style = ExcelBorderStyle.Thin;
+                    }
+                }
+                worksheet.PrinterSettings.FitToPage = true;
+                worksheet.PrinterSettings.FitToWidth = 1;
+                worksheet.PrinterSettings.FitToHeight = 0;
+                worksheet.PrinterSettings.RepeatRows = new ExcelAddress("1:1");
+                worksheet.View.FreezePanes(2, 1);
+                worksheet.PrinterSettings.PrintArea = worksheet.Cells[1, 1, row, count];
+                return package.GetAsByteArray();
+            }
+        }
+
         public byte[] EmpsReport(EmpReport report)
         {
             using (var package = new ExcelPackage())

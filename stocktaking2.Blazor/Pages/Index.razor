@@ -14,7 +14,79 @@
 <AuthorizeView>
     <Authorized>
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800">Добро пожаловать!</h1>
+            <h1 class="h3 mb-0 text-gray-800">ООО "Рога и копыта"</h1>
+        </div>
+        <div class="row">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="row">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Всего техники
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800"><a href="/units">@data.UnitsCount</a></div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-desktop fa-2x text-gray-300"></i>
+                                </div>
+                                <div class="w-100"></div>
+                                <div class="col pt-4">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Последняя добавленная техника
+                                    </div>
+                                </div>
+                                <div class="w-100"></div>
+                                <div class="col">
+                                    <div class="list-group list-group-flush">
+                                        @foreach (var unit in data.Last5Units)
+                                        {
+                                            <a href=/unit/@unit.Id class="list-group-item list-group-item-action">@(!string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана")</a>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="w-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="row">
+                                <div class="col mr-2">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Ремонты (Текущий месяц)
+                                    </div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800">@data.ServiceWorksMounthCount</div>
+                                </div>
+                                <div class="col-auto">
+                                    <i class="fas fa-tools fa-2x text-gray-300"></i>
+                                </div>
+                                <div class="w-100"></div>
+                                <div class="col pt-4">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                        Последние ремонты
+                                    </div>
+                                </div>
+                                <div class="w-100"></div>
+                                <div class="col">
+                                    <div class="list-group list-group-flush">
+                                        @foreach (var sw in data.Last5ServiceWorks)
+                                        {
+                                            <a href=/unit/@sw.UnitId class="list-group-item list-group-item-action">@sw.WorkName</a>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="w-100"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="row">
             <div class="col-8">
@@ -49,11 +121,11 @@
     private ChartJsBarChart depUnits;
     private BarConfig barConfig;
     private BarDataset<DoubleWrapper> depUnitsDataSet;
-    private ChartData data;
+    private IndexPageData data;
 
     protected override async Task OnInitializedAsync()
     {
-        data = await @Service.GetCharts();
+        data = await @Service.GetIndexPageData();
         pieConfig = new PieConfig
         {
             Options = new PieOptions
