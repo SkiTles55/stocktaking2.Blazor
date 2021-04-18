@@ -30,7 +30,6 @@ namespace stocktaking2.Blazor.Data
         public DbSet<WinAccount> WinAccounts { get; set; }
         public DbSet<WinName> WinNames { get; set; }
         public DbSet<WinNameHistory> WinNameHistories { get; set; }
-        public DbSet<DisposedUnit> DisposedUnits { get; set; }
         public DbSet<ManufacturerCategories> ManufacturerCategories { get; set; }
         public DbSet<UnitInstalledSofts> UnitInstalledSofts { get; set; }
         public DbSet<UserSettings> UserSettings { get; set; }

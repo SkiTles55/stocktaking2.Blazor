@@ -41,6 +41,8 @@ namespace stocktaking2.Blazor.Data.DB
         public List<UnitHistory> UnitHistories { get; set; }
         public IEnumerable<UnitInstalledSofts> UnitInstalledSofts { get; set; }
         public DateTime DateCreated { get; set; }
+        public bool Disposed { get; set; }
+        public DateTime? DisposeDate { get; set; }
         public Unit()
         {
             StoredFiles = new List<StoredFile>();

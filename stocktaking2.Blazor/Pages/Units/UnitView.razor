@@ -3,6 +3,7 @@
 @using stocktaking2.Blazor.Data.DB
 @using stocktaking2.Blazor.Helpers
 @using System.Security.Claims
+@using System.Globalization
 @using System.IO
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject IJSRuntime JS
@@ -35,6 +36,12 @@
                             <button type="button" class="btn btn-link text-decoration-none" @onclick="Print" style="padding:0; border:0;"><i class="fas fa-print fa-sm"></i> Печать карточки</button>
                         </div>
                         <div class="card-body">
+                            @if (unit.Disposed)
+                            {
+                                <div class="form-group row">
+                                    <p class="text-danger">Оборудование списано @unit.DisposeDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</p>
+                                </div>
+                            }
                             @if (unit.Category.Manufacturer)
                             {
                                 <div class="form-group row">

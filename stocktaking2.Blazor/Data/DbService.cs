@@ -53,8 +53,24 @@ namespace stocktaking2.Blazor.Data
             [24] = x => x.Specs,
             [25] = x => x.UnitStatus.Name,
             [26] = x => x.UnitStatus.Name,
-            [27] = x => x.IPAdresses.OrderBy(a => a.IPAddressBytes).Select(a => a.IPAddressBytes).FirstOrDefault(),
-            [28] = x => x.IPAdresses.OrderBy(a => a.IPAddressBytes).Select(a => a.IPAddressBytes).FirstOrDefault()
+            [27] = x => x.BuyDate,
+            [28] = x => x.BuyDate,
+            [29] = x => x.WinName.Name,
+            [30] = x => x.WinName.Name,
+            [31] = x => x.Processor,
+            [32] = x => x.Processor,
+            [33] = x => x.Motherboard,
+            [34] = x => x.Motherboard,
+            [35] = x => x.DDR,
+            [36] = x => x.DDR,
+            [37] = x => x.CartridgeModel,
+            [38] = x => x.CartridgeModel,
+            [39] = x => x.CartridgeCount,
+            [40] = x => x.CartridgeCount,
+            [41] = x => x.BiosPass,
+            [42] = x => x.BiosPass,
+            [43] = x => x.IPAdresses.OrderBy(a => a.IPAddressBytes).Select(a => a.IPAddressBytes).FirstOrDefault(),
+            [44] = x => x.IPAdresses.OrderBy(a => a.IPAddressBytes).Select(a => a.IPAddressBytes).FirstOrDefault()
 
         };
 
@@ -505,6 +521,7 @@ namespace stocktaking2.Blazor.Data
             UnitsPaging unitsPaging = new UnitsPaging();
             unitsPaging.Units = new List<Unit>();
             unitsPaging.TotalCount = _context.Units
+                .Where(x => !x.Disposed)
                 .Where(x => cat == 0 ? true : x.CategoryId == cat)
                 .Where(x => dep == 0 ? true : x.DepartamentId == dep)
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
@@ -524,6 +541,7 @@ namespace stocktaking2.Blazor.Data
                 .Include(x => x.Category)
                 .Include(a => a.IPAdresses)
                 .Include(x => x.UnitStatus)
+                .Where(x => !x.Disposed)
                 .Where(x => cat == 0 ? true : x.CategoryId == cat)
                 .Where(x => dep == 0 ? true : x.DepartamentId == dep)
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
@@ -543,6 +561,7 @@ namespace stocktaking2.Blazor.Data
                 .Include(x => x.Category)
                 .Include(a => a.IPAdresses)
                 .Include(x => x.UnitStatus)
+                .Where(x => !x.Disposed)
                 .Where(x => cat == 0 ? true : x.CategoryId == cat)
                 .Where(x => dep == 0 ? true : x.DepartamentId == dep)
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
@@ -2108,24 +2127,17 @@ namespace stocktaking2.Blazor.Data
             {
                 userSettings = new UserSettings 
                 { 
-                    Collumn1 = "departament", 
-                    Collumn2 = "model", 
-                    Collumn3 = "employer", 
-                    Collumn4 = "category", 
-                    Collumn5 = admin ? "netname" : "invent", 
-                    Collumn6 = admin ? "ip" : "serial", 
-                    Collumn7 = "specs", 
-                    Collumn8 = "installdate", 
-                    Collumn9 = "Не выбран",
-                    Collumn10 = "Не выбран",
-                    Collumn11 = "Не выбран",
-                    Collumn12 = "Не выбран",
-                    Collumn13 = "Не выбран",
+                    CollumnSettings = TableSettings.GetDefaultSettings(),
                     SortOrder = 1,
                     UserID = id,
                     RowsCount = 10
                 };
                 _context.UserSettings.Add(userSettings);
+                _context.SaveChanges();
+            }
+            if (string.IsNullOrEmpty(userSettings.CollumnSettings))
+            {
+                userSettings.CollumnSettings = TableSettings.GetDefaultSettings();
                 _context.SaveChanges();
             }
             return Task.FromResult(userSettings);
@@ -2260,8 +2272,10 @@ namespace stocktaking2.Blazor.Data
         public Task<IndexPageData> GetIndexPageData()
         {
             IndexPageData data = new IndexPageData();
-            data.UnitsCount = _context.Units.Count();
-            data.Last5Units = _context.Units.OrderByDescending(x => x.DateCreated).Take(5).ToList();
+            data.UnitsCount = _context.Units
+                .Where(x => !x.Disposed).Count();
+            data.Last5Units = _context.Units
+                .Where(x => !x.Disposed).OrderByDescending(x => x.DateCreated).Take(5).ToList();
             var SW = _context.ServiceWorks.OrderByDescending(x => x.WorkDate).ToList().Where(x => x.WorkDate >= DateTime.Now.AddMonths(-1));
             data.ServiceWorksMounthCount = SW.Count();
             data.Last5ServiceWorks = SW.Take(5).ToList();
@@ -2436,6 +2450,7 @@ namespace stocktaking2.Blazor.Data
                 .Include(s => s.WinAccounts)
                 .Include(x => x.RdpConnects)
                 .Include(x => x.ServiceWorks)
+                .Where(x => !x.Disposed)
                 .Where(x => report.catFilter > 0 ? x.CategoryId == report.catFilter : true)
                 .Where(x => report.depFilter > 0 ? x.DepartamentId == report.depFilter : true)
                 .Where(x => report.empFilter > 0 ? x.EmployerId == report.empFilter : true)

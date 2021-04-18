@@ -10,6 +10,7 @@ using Toolbelt.Blazor.Extensions.DependencyInjection;
 using stocktaking2.Blazor.Areas.Identity;
 using stocktaking2.Blazor.Data;
 using System;
+using Plk.Blazor.DragDrop;
 
 namespace stocktaking2.Blazor
 {
@@ -48,6 +49,7 @@ namespace stocktaking2.Blazor
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddHeadElementHelper();
+            services.AddBlazorDragDrop();
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
         }

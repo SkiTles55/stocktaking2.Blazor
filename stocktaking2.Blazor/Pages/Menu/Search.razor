@@ -5,9 +5,11 @@
 @using stocktaking2.Blazor.Helpers
 @using Microsoft.AspNetCore.Identity;
 @using System.Security.Claims
+@using System.Globalization
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> _UserManager
 @inject IHeadElementHelper HeadElementHelper
+@inject NavigationManager MyNavigationManager
 @inherits OwningComponentBase<DbService>
 <AuthorizeView>
     <Authorized>
@@ -29,168 +31,171 @@
                                 <table class="table table-bordered" id="DataTable" width="100%" cellspacing="0">
                                     <thead>
                                         <tr>
-                                            @for (int i = 1; i < 14; i++)
+                                            @foreach (var col in Collumns)
                                             {
-                                                @switch (tableCollumns[i])
-                                                {
-                                                    case "category":
-                                                        <th>
-                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> Тип</a>
-                                                            <select class="form-control form-control-sm" @onchange="@CatFilter">
-                                                                <option value="0" selected="selected">Все</option>
-                                                                @foreach (var option in categories)
-                                                                {
-                                                                    <option value="@option.Id">
-                                                                        @option.Name
-                                                                    </option>
-                                                                }
-                                                            </select>
-                                                        </th>
-                                                        break;
-                                                    case "departament":
-                                                        <th>
-                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 5 ? 6 : 5))"><i class="@SortClass(5, 6)"></i> Отдел</a>
-                                                            <select class="form-control form-control-sm" @onchange="@DepFilter">
-                                                                <option value="0" selected="selected">Все</option>
-                                                                @foreach (var option in departaments)
-                                                                {
-                                                                    <option value="@option.Id">
-                                                                        @option.Name
-                                                                    </option>
-                                                                }
-                                                            </select>
-                                                        </th>
-                                                        break;
-                                                    case "employer":
-                                                        <th>
-                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> Сотрудник</a>
-                                                            <select class="form-control form-control-sm" @onchange="@EmpFilter">
-                                                                <option value="0" selected="selected">Все</option>
-                                                                @foreach (var option in employers.Where(x => depFilter == 0 ? true : x.DepartamentId == depFilter))
-                                                                {
-                                                                    <option value="@option.Id">
-                                                                        @option.Name
-                                                                    </option>
-                                                                }
-                                                            </select>
-                                                        </th>
-                                                        break;
-                                                    case "installdate":
-                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 9 ? 10 : 9))"><i class="@SortClass(9, 10)"></i> Дата установки</a></th>
-                                                        break;
-                                                    case "invent":
-                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 11 ? 12 : 11))"><i class="@SortClass(11, 12)"></i> Инвентарный номер</a></th>
-                                                        break;
-                                                    case "ip":
-                                                        if (@context.User.IsInRole("Admin"))
-                                                        {
-                                                            <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 27 ? 28 : 27))"><i class="@SortClass(27, 28)"></i> IP адреса</a></th>
-                                                        }
-                                                        break;
-                                                    case "location":
-                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 13 ? 14 : 13))"><i class="@SortClass(13, 14)"></i> Местоположение</a></th>
-                                                        break;
-                                                    case "man":
-                                                        <th>
-                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 15 ? 16 : 15))"><i class="@SortClass(15, 16)"></i> Производитель</a>
-                                                            <select class="form-control form-control-sm" @onchange="@ManFilter">
-                                                                <option value="0" selected="selected">Все</option>
-                                                                @foreach (var option in manufacturers)
-                                                                {
-                                                                    <option value="@option.Id">
-                                                                        @option.Name
-                                                                    </option>
-                                                                }
-                                                            </select>
-                                                        </th>
-                                                        break;
-                                                    case "model":
-                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 17 ? 18 : 17))"><i class="@SortClass(17, 18)"></i> Модель</a></th>
-                                                        break;
-                                                    case "netname":
-                                                        if (@context.User.IsInRole("Admin"))
-                                                        {
-                                                            <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 19 ? 20 : 19))"><i class="@SortClass(19, 20)"></i> Сетевое имя</a></th>
-                                                        }
-                                                        break;
-                                                    case "serial":
-                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 21 ? 22 : 21))"><i class="@SortClass(21, 22)"></i> Серийный номер</a></th>
-                                                        break;
-                                                    case "specs":
-                                                        <th><a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 23 ? 24 : 23))"><i class="@SortClass(23, 24)"></i> Характеристики</a></th>
-                                                        break;
-                                                    case "status":
-                                                        <th>
-                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 25 ? 26 : 25))"><i class="@SortClass(25, 26)"></i> Статус</a>
-                                                            <select class="form-control form-control-sm" @onchange="@StatusFilter">
-                                                                <option value="0" selected="selected">Все</option>
-                                                                @foreach (var option in statuses)
-                                                                {
-                                                                    <option value="@option.Id">
-                                                                        @option.Name
-                                                                    </option>
-                                                                }
-                                                            </select>
-                                                        </th>
-                                                        break;
-                                                }
+                                                <th>
+                                                    @switch (col)
+                                                    {
+                                                        case "status":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 25 ? 26 : 25))"><i class="@SortClass(25, 26)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "category":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "man":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 15 ? 16 : 15))"><i class="@SortClass(15, 16)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "model":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 17 ? 18 : 17))"><i class="@SortClass(17, 18)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "location":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 13 ? 14 : 13))"><i class="@SortClass(13, 14)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "invent":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 11 ? 12 : 11))"><i class="@SortClass(11, 12)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "serial":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 21 ? 22 : 21))"><i class="@SortClass(21, 22)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "buydate":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 27 ? 28 : 27))"><i class="@SortClass(27, 28)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "installdate":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 9 ? 10 : 9))"><i class="@SortClass(9, 10)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "employer":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "departament":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 5 ? 6 : 5))"><i class="@SortClass(5, 6)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "winname":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 29 ? 30 : 29))"><i class="@SortClass(29, 30)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "processor":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 31 ? 32 : 31))"><i class="@SortClass(31, 32)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "motherboard":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 33 ? 34 : 33))"><i class="@SortClass(33, 34)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "DDR":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 35 ? 36 : 35))"><i class="@SortClass(35, 36)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "specs":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 23 ? 24 : 23))"><i class="@SortClass(23, 24)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "cartridgemodel":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 37 ? 38 : 37))"><i class="@SortClass(37, 38)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "cartridgecount":
+                                                            <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 39 ? 40 : 39))"><i class="@SortClass(39, 40)"></i> @TableSettings.Collumns[col]</a>
+                                                            break;
+                                                        case "ipadresses":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 43 ? 44 : 43))"><i class="@SortClass(43, 44)"></i> @TableSettings.Collumns[col]</a>
+                                                            }
+                                                            break;
+                                                        case "netname":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 19 ? 20 : 19))"><i class="@SortClass(19, 20)"></i> @TableSettings.Collumns[col]</a>
+                                                            }
+                                                            break;
+                                                        case "biospass":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                <a href="search/@text" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 41 ? 42 : 41))"><i class="@SortClass(41, 42)"></i> @TableSettings.Collumns[col]</a>
+                                                            }
+                                                            break;
+                                                    }
+                                                </th>
                                             }
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach (var one in unitsPaging.Units)
                                         {
-                                            <tr>
-                                                @for (int i = 1; i < 14; i++)
+                                            <tr class="tr-link" @onclick="@(() => OpenUnit(one))">
+                                                @foreach (var col in Collumns)
                                                 {
-                                                    @switch (tableCollumns[i])
-                                                    {
-                                                        case "category":
-                                                            <td>@one.Category.Name</td>
-                                                            break;
-                                                        case "departament":
-                                                            <td>@one.Departament?.Name</td>
-                                                            break;
-                                                        case "employer":
-                                                            <td>@one.Employer?.Name</td>
-                                                            break;
-                                                        case "installdate":
-                                                            <td>@one.InstallDate?.ToString("d")</td>
-                                                            break;
-                                                        case "invent":
-                                                            <td>@one.InventId</td>
-                                                            break;
-                                                        case "ip":
-                                                            if (@context.User.IsInRole("Admin"))
-                                                            {
-                                                                <td>@string.Join(", ", one.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()).ToArray())</td>
-                                                            }
-                                                            break;
-                                                        case "location":
-                                                            <td>@one.Location</td>
-                                                            break;
-                                                        case "man":
-                                                            <td>@one.Manufacturer?.Name</td>
-                                                            break;
-                                                        case "model":
-                                                            <td><a href="/unit/@one.Id" class="text-decoration-none">@(one.Model ?? "Не указана")</a></td>
-                                                            break;
-                                                        case "netname":
-                                                            if (@context.User.IsInRole("Admin"))
-                                                            {
-                                                                <td>@one.NetName</td>
-                                                            }
-                                                            break;
-                                                        case "serial":
-                                                            <td>@one.Serial</td>
-                                                            break;
-                                                        case "specs":
-                                                            <td>@one.Specs</td>
-                                                            break;
-                                                        case "status":
-                                                            <td>@one.UnitStatus.Name</td>
-                                                            break;
-                                                    }
+                                                    <td>
+                                                        @switch (col)
+                                                        {
+                                                            case "status":
+                                                                @one.UnitStatus.Name
+                                                                break;
+                                                            case "category":
+                                                                @one.Category.Name
+                                                                break;
+                                                            case "man":
+                                                                @one.Manufacturer?.Name
+                                                                break;
+                                                            case "model":
+                                                                <a href="/unit/@one.Id" class="text-decoration-none">@(!string.IsNullOrEmpty(one.Model) ? one.Model : "Не указана")</a>
+                                                                break;
+                                                            case "location":
+                                                                @one.Location
+                                                                break;
+                                                            case "invent":
+                                                                @one.InventId
+                                                                break;
+                                                            case "serial":
+                                                                @one.Serial
+                                                                break;
+                                                            case "buydate":
+                                                                @one.BuyDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))
+                                                                break;
+                                                            case "installdate":
+                                                                @one.InstallDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))
+                                                                break;
+                                                            case "employer":
+                                                                @one.Employer?.Name
+                                                                break;
+                                                            case "departament":
+                                                                @one.Departament?.Name
+                                                                break;
+                                                            case "winname":
+                                                                @one.WinName?.Name
+                                                                break;
+                                                            case "processor":
+                                                                @one.Processor
+                                                                break;
+                                                            case "motherboard":
+                                                                @one.Motherboard
+                                                                break;
+                                                            case "DDR":
+                                                                @one.DDR
+                                                                break;
+                                                            case "specs":
+                                                                @one.Specs
+                                                                break;
+                                                            case "cartridgemodel":
+                                                                @one.CartridgeModel
+                                                                break;
+                                                            case "cartridgecount":
+                                                                @one.CartridgeCount;
+                                                                break;
+                                                            case "ipadresses":
+                                                                if (@context.User.IsInRole("Admin"))
+                                                                {
+                                                                    @string.Join(", ", one.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()))
+                                                                }
+                                                                break;
+                                                            case "netname":
+                                                                if (@context.User.IsInRole("Admin"))
+                                                                {
+                                                                    @one.NetName
+                                                                }
+                                                                break;
+                                                            case "biospass":
+                                                                if (@context.User.IsInRole("Admin"))
+                                                                {
+                                                                    @one.BiosPass
+                                                                }
+                                                                break;
+                                                        }
+                                                    </td>
                                                 }
                                             </tr>
                                         }
@@ -294,13 +299,13 @@
     const string quote = "\"";
     ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
     UserSettings userSettings;
+    List<string> Collumns;
     int currentPage = 1;
     int VisiblePages = 5;
     int Start;
     int Finish;
     int? currentSort;
     UnitsPaging unitsPaging;
-    Dictionary<int, string> tableCollumns = new Dictionary<int, string>();
     List<Category> categories;
     int catFilter = 0;
     List<Departament> departaments;
@@ -351,19 +356,7 @@
     {
         userSettings = await @Service.GetSettings(_UserManager.GetUserId(CurrentUser), CurrentUser.IsInRole("Admin"));
         if (currentSort == null) currentSort = userSettings.SortOrder;
-        tableCollumns.Add(1, userSettings.Collumn1);
-        tableCollumns.Add(2, userSettings.Collumn2);
-        tableCollumns.Add(3, userSettings.Collumn3);
-        tableCollumns.Add(4, userSettings.Collumn4);
-        tableCollumns.Add(5, userSettings.Collumn5);
-        tableCollumns.Add(6, userSettings.Collumn6);
-        tableCollumns.Add(7, userSettings.Collumn7);
-        tableCollumns.Add(8, userSettings.Collumn8);
-        tableCollumns.Add(9, userSettings.Collumn9);
-        tableCollumns.Add(10, userSettings.Collumn10);
-        tableCollumns.Add(11, userSettings.Collumn11);
-        tableCollumns.Add(12, userSettings.Collumn12);
-        tableCollumns.Add(13, userSettings.Collumn13);
+        Collumns = TableSettings.DeserializeSettings(userSettings.CollumnSettings);
         categories = await @Service.CategoriesList();
         departaments = await @Service.GetDepartamentsAdd();
         employers = await @Service.GetEmployersAdd();
@@ -443,5 +436,10 @@
         {
             return "fas fa-sort";
         }
+    }
+
+    void OpenUnit(Unit unit)
+    {
+        MyNavigationManager.NavigateTo("unit/" + unit.Id);
     }
 }
