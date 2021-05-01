@@ -168,9 +168,8 @@
                     </div>
                 </div>
             </ModalWindow>
-            <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+            <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()" Title="Действительно хотите удалить этого производителя?">
                 <div class="form-group">
-                    <p>Действительно хотите удалить этого производителя?</p>
                     <h3>@forDel.Name</h3>
                 </div>
             </ModalYesNoDialog>

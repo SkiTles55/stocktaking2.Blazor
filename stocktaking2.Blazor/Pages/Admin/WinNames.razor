@@ -149,9 +149,8 @@
                         </div>
                     }
                 </ModalWindow>
-                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()" Title="Действительно хотите удалить эту ОС?">
                     <div class="form-group">
-                        <p>Действительно хотите удалить эту ОС?</p>
                         <h3>@forDel.Name</h3>
                     </div>
                 </ModalYesNoDialog>

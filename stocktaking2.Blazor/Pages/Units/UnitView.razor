@@ -748,9 +748,9 @@
                         <textarea type="text" class="form-control" @bind="forEdit" />
                     </div>
                 </ModalWindow>
-                <ModalWindow @ref="selectModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveSelectListChanges())">
+                <ModalWindow @ref="selectModal" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveSelectListChanges())" Scrollable="false">
                     <div class="form-group">
-                        <BlazoredTypeahead SearchMethod="SearchSL"
+                        <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchSL"
                                            ConvertMethod="ConvertSL"
                                            EnableDropDown="true"
                                            ShowDropDownOnFocus="true"
@@ -779,11 +779,7 @@
                         <input type="number" class="form-control" @bind="@selected">
                     </div>
                 </ModalWindow>
-                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del(What)">
-                    <div class="form-group">
-                        <p>@ModalTitle</p>
-                    </div>
-                </ModalYesNoDialog>
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del(What)" Title="@ModalTitle"/>
                 <ModalAddDialog @ref="addSW" Title="Добавление ремонта" OnClick="() => AddSW()">
                     <div class="form-group row">
                         <label for="wdate" class="col-3 col-form-label">Дата</label>

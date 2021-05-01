@@ -23,9 +23,12 @@
                 <li class="nav-item">
                     <a class="nav-link active" href="/emails" @onclick="Report"><i class="fas fa-download fa-sm"></i> Скачать список</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link active" href="/emails" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
-                </li>
+                @if (@context.User.IsInRole("Admin"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/emails" @onclick="ShowHistoryModal"><i class="fas fa-list fa-sm"></i> История изменений</a>
+                    </li>
+                }
             </ul>
         </div>
         @if (EmailPaging == null)
@@ -168,7 +171,7 @@
             </div>
             @if (@context.User.IsInRole("Admin"))
             {
-                <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="@ModalButton" OnClick="(() => SaveEmail())">
+                <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="@ModalButton" OnClick="(() => SaveEmail())" Scrollable="false">
                     <div class="form-group row">
                         <label for="login" class="col-3 col-form-label">Адрес</label>
                         <div class="col">
@@ -184,7 +187,7 @@
                     <div class="form-group row">
                         <label for="emp" class="col-3 col-form-label">Сотрудник</label>
                         <div class="col">
-                            <BlazoredTypeahead SearchMethod="SearchEmp"
+                            <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchEmp"
                                                ConvertMethod="ConvertEmp"
                                                EnableDropDown="true"
                                                ShowDropDownOnFocus="true"
@@ -209,30 +212,29 @@
                         </div>
                     }
                 </ModalWindow>
-                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()" Title="Действительно хотите удалить этот аккаунт?">
                     <div class="form-group">
-                        <p>Действительно хотите удалить этот аккаунт?</p>
                         <h3>@emForDel.Login</h3>
                     </div>
                 </ModalYesNoDialog>
             }
-    <ModalHistory @ref="modalHistory">
-        @if (EmailHistories == null)
-        {
-            <p>Данные загружаются...</p>
-        }
-        else
-        {
-            @foreach (var cH in EmailHistories)
-            {
-                <div class="alert alert-secondary" role="alert">
-                    <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
-                    <p>Пользователь: <b>@cH.UserName</b></p>
-                    <p class="font-weight-bold">@cH.Changes</p>
-                </div>
-            }
-        }
-    </ModalHistory>
+            <ModalHistory @ref="modalHistory">
+                @if (EmailHistories == null)
+                {
+                    <p>Данные загружаются...</p>
+                }
+                else
+                {
+                    @foreach (var cH in EmailHistories)
+                    {
+                        <div class="alert alert-secondary" role="alert">
+                            <p>Время: <b>@cH.Time.ToString("dd.MM.yyyy HH:mm")</b></p>
+                            <p>Пользователь: <b>@cH.UserName</b></p>
+                            <p class="font-weight-bold">@cH.Changes</p>
+                        </div>
+                    }
+                }
+            </ModalHistory>
             <ModalReport @ref="modalReport" Title="Скачать список аккаунтов Email" OnClick="DownloadReport">
                 <div class="form-group row">
                     <label for="Hcolor" class="col-4 col-form-label">Цвет заголовка таблицы</label>

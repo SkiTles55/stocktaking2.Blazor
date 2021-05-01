@@ -40,37 +40,37 @@ namespace stocktaking2.Blazor.Helpers
                     );
                 context.SaveChanges();
             }
-
-            var man1 = new Manufacturer { Name = "Brother" };
-            var man2 = new Manufacturer { Name = "Kyocera" };
-            var man3 = new Manufacturer { Name = "HP" };
-            var man4 = new Manufacturer { Name = "Benq" };
-            var man5 = new Manufacturer { Name = "Canon" };
-            var man6 = new Manufacturer { Name = "Ippon" };
-            var man7 = new Manufacturer { Name = "APC" };
-            var man8 = new Manufacturer { Name = "Xerox" };
-            var man9 = new Manufacturer { Name = "LG" };
-            var man10 = new Manufacturer { Name = "Samsung" };
-            var man11 = new Manufacturer { Name = "ViewSonic" };
-            var man12 = new Manufacturer { Name = "D-Link" };
-            var man13 = new Manufacturer { Name = "Unknown" };
-            var man14 = new Manufacturer { Name = "FSP" };
-            var man15 = new Manufacturer { Name = "Crown" };
-            var man16 = new Manufacturer { Name = "PowerCom" };
-            var man17 = new Manufacturer { Name = "Powerman" };
-            var man18 = new Manufacturer { Name = "Sven" };
-            var man19 = new Manufacturer { Name = "AOC" };
-            var man20 = new Manufacturer { Name = "Asus" };
-            var man21 = new Manufacturer { Name = "Acer" };
-            var man22 = new Manufacturer { Name = "Dexp" };
-            var man23 = new Manufacturer { Name = "Dell" };
-            var man24 = new Manufacturer { Name = "Lenovo" };
-            var man25 = new Manufacturer { Name = "NEC" };
-            var man26 = new Manufacturer { Name = "Philips" };
-            var man27 = new Manufacturer { Name = "TONK" };
             if (!context.Manufacturers.Any())
             {
-                context.Manufacturers.AddRange(man1, man2, man3, man4, man5, man6, man7, man8, man9, man10, man11, man12, man13, man14,man15,man16,man17,man18,man19,man20,man21,man22,man23,man24,man25,man26,man27);
+                context.Manufacturers.AddRange(
+                    new Manufacturer { Name = "Brother" },
+                    new Manufacturer { Name = "Kyocera" },
+                    new Manufacturer { Name = "HP" },
+                    new Manufacturer { Name = "Benq" },
+                    new Manufacturer { Name = "Canon" },
+                    new Manufacturer { Name = "Ippon" },
+                    new Manufacturer { Name = "APC" },
+                    new Manufacturer { Name = "Xerox" },
+                    new Manufacturer { Name = "LG" },
+                    new Manufacturer { Name = "Samsung" },
+                    new Manufacturer { Name = "ViewSonic" },
+                    new Manufacturer { Name = "D-Link" },
+                    new Manufacturer { Name = "Unknown" },
+                    new Manufacturer { Name = "FSP" },
+                    new Manufacturer { Name = "Crown" },
+                    new Manufacturer { Name = "PowerCom" },
+                    new Manufacturer { Name = "Powerman" },
+                    new Manufacturer { Name = "Sven" },
+                    new Manufacturer { Name = "AOC" },
+                    new Manufacturer { Name = "Asus" },
+                    new Manufacturer { Name = "Acer" },
+                    new Manufacturer { Name = "Dexp" },
+                    new Manufacturer { Name = "Dell" },
+                    new Manufacturer { Name = "Lenovo" },
+                    new Manufacturer { Name = "NEC" },
+                    new Manufacturer { Name = "Philips" },
+                    new Manufacturer { Name = "TONK" }
+                    );
                 context.SaveChanges();
             }
             if (!context.InstalledSofts.Any())

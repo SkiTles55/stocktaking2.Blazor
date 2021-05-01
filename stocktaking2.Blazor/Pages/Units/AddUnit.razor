@@ -27,7 +27,7 @@
                                 <div class="form-group row">
                                     <label for="UnitCategory" class="col-3 col-form-label">Тип техники</label>
                                     <div class="col">
-                                        <BlazoredTypeahead SearchMethod="SearchCat"
+                                        <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchCat"
                                                            ConvertMethod="ConvertCat"
                                                            EnableDropDown="true"
                                                            ShowDropDownOnFocus="true"
@@ -52,7 +52,7 @@
                                         <div class="form-group row">
                                             <label for="text1" class="col-3 col-form-label">Производитель</label>
                                             <div class="col">
-                                                <BlazoredTypeahead SearchMethod="SearchMan"
+                                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchMan"
                                                                    ConvertMethod="ConvertMan"
                                                                    EnableDropDown="true"
                                                                    ShowDropDownOnFocus="true"
@@ -83,7 +83,7 @@
                                     <div class="form-group row">
                                         <label for="status" class="col-3 col-form-label">Статус</label>
                                         <div class="col">
-                                            <BlazoredTypeahead SearchMethod="SearchStatus"
+                                            <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchStatus"
                                                                ConvertMethod="ConvertStatus"
                                                                EnableDropDown="true"
                                                                ShowDropDownOnFocus="true"
@@ -151,7 +151,7 @@
                                         <div class="form-group row">
                                             <label for="empl" class="col-3 col-form-label">Сотрудник</label>
                                             <div class="col">
-                                                <BlazoredTypeahead SearchMethod="SearchEmp"
+                                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchEmp"
                                                                    ConvertMethod="ConvertEmp"
                                                                    EnableDropDown="true"
                                                                    ShowDropDownOnFocus="true"
@@ -177,7 +177,7 @@
                                             <div class="col">
                                                 @if (newUnit.EmployerId == null || newUnit.EmployerId == 0)
                                                 {
-                                                    <BlazoredTypeahead SearchMethod="SearchDep"
+                                                    <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchDep"
                                                                        ConvertMethod="ConvertDep"
                                                                        EnableDropDown="true"
                                                                        ShowDropDownOnFocus="true"
@@ -206,7 +206,7 @@
                                         <div class="form-group row">
                                             <label for="winname" class="col-3 col-form-label">Операционная система</label>
                                             <div class="col">
-                                                <BlazoredTypeahead SearchMethod="SearchWin"
+                                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="SearchWin"
                                                                    ConvertMethod="ConvertWin"
                                                                    EnableDropDown="true"
                                                                    ShowDropDownOnFocus="true"

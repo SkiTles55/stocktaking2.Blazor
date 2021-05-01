@@ -310,9 +310,8 @@
                         </div>
                     </div>
                 </ModalWindow>
-                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()">
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del()" Title="Действительно хотите удалить этот тип техники?">
                     <div class="form-group">
-                        <p>Действительно хотите удалить этот тип техники?</p>
                         <h3>@forDel.Name</h3>
                     </div>
                     @if (forDel.Units.Count > 0)
