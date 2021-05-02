@@ -11,9 +11,9 @@
                     @ChildContent
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary btn-icon-split" @onclick="OnClick">
+                    <button class="@YesButtonClass" @onclick="OnClick">
                         <span class="icon text-white-50">
-                            <i class="far fa-save"></i>
+                            <i class="@YesButtonIcon"></i>
                         </span>
                         <span class="text">@ModalButtonOK</span>
                     </button>
@@ -41,6 +41,10 @@
     public EventCallback<MouseEventArgs> OnClick { get; set; }
     [Parameter]
     public bool Scrollable { get; set; } = true;
+    [Parameter]
+    public string YesButtonClass { get; set; } = "btn btn-primary btn-icon-split";
+    [Parameter]
+    public string YesButtonIcon { get; set; } = "far fa-save";
 
     public void Show()
     {

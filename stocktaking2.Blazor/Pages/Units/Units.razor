@@ -446,7 +446,7 @@
                 <div class="form-group row">
                     <div class="col">
                         <label for="ShColls" class="col-4 col-form-label">Отображаемые столбцы</label>
-                        <Dropzone Items="Collumns" Context="item" id="ShColls">
+                        <Dropzone Items="Collumns" Context="item" id="ShColls" Accepts='(d, t) => CurrentUser.IsInRole("Admin") ? true : d != "ipadresses" && d != "netname" && d != "biospass"'>
                             <button type="button" class="btn btn-success btn-block">
                                 @TableSettings.Collumns[item]
                             </button>
@@ -830,6 +830,7 @@
     const string quote = "\"";
     bool FiltersCollapse = false;
     List<string> Collumns;
+    List<string> CollumnsProbe;
     List<string> HiddenCollumns;
     Dictionary<int, string> OrderDict = new Dictionary<int, string>()
     {
@@ -961,6 +962,7 @@
         if (currentSort == null) currentSort = userSettings.SortOrder;
         pageSize = userSettings.RowsCount;
         Collumns = TableSettings.DeserializeSettings(userSettings.CollumnSettings);
+        CollumnsProbe = Collumns;
         HiddenCollumns = TableSettings.Collumns.Where(x => !Collumns.Contains(x.Key)).Select(x => x.Key).ToList();
         categories = await @Service.CategoriesList();
         departaments = await @Service.GetDepartamentsAdd();
@@ -991,20 +993,31 @@
 
     async void SaveSettings()
     {
-        userSettings.CollumnSettings = TableSettings.SerializeSettings(Collumns);
-        var result = await @Service.SaveSettings(userSettings.Id);
+        bool changed = false;
+        if (Collumns != CollumnsProbe)
+        {
+            userSettings.CollumnSettings = TableSettings.SerializeSettings(Collumns);
+            changed = true;
+        }
         if (userSettings.RowsCount != pageSize)
         {
             userSettings.RowsCount = pageSize;
-            MyNavigationManager.NavigateTo("units/", true);
+            changed = true;
         }
-        tableSettings.Show();
         if (currentSort != userSettings.SortOrder)
         {
             currentSort = userSettings.SortOrder;
             currentPage = 1;
-            await GetUnits();
+            changed = true;
         }
+
+        if (changed)
+        {
+            var result = await @Service.SaveSettings(userSettings.Id);
+            await GetUnits();
+
+        }
+        tableSettings.Show();
     }
 
     async void SetSort(int sort)

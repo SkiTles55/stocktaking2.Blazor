@@ -724,6 +724,9 @@ namespace stocktaking2.Blazor.Migrations
                     b.Property<DateTime?>("DisposeDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DisposeReason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<bool>("Disposed")
                         .HasColumnType("bit");
 

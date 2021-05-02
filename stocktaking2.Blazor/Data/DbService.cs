@@ -19,10 +19,7 @@ namespace stocktaking2.Blazor.Data
         private ApplicationDbContext _context;
         const string quote = "\"";
 
-        public DbService(ApplicationDbContext context)
-        {
-            _context = context;
-        }
+        public DbService(ApplicationDbContext context) => _context = context;
 
         #region OrdersDict
         private Dictionary<int, Expression<Func<Unit, object>>> UnitOrderDict = new Dictionary<int, Expression<Func<Unit, object>>>()
@@ -205,23 +202,19 @@ namespace stocktaking2.Blazor.Data
         public Task<Dictionary<string, bool>> GetSoftDict()
         {
             Dictionary<string, bool> softs = new Dictionary<string, bool>();
-            var temp = _context.InstalledSofts.OrderBy(x => x.Name).ToList();
-            foreach (var s in temp)
-            {
-                softs.Add(s.Name, false);
-            }
+            softs = _context.InstalledSofts.OrderBy(x => x.Name).ToDictionary(x => x.Name, x => false);
             return Task.FromResult(softs);
         }
 
         public Task<int> CreateUnit(UnitForm unit, string UserName)
         {
-            var category = _context.Categories.Where(x => x.Id == unit.CategoryId).FirstOrDefault();
+            var category = _context.Categories.Find(unit.CategoryId);
             if (category != null)
             {
                 try
                 {
                     Unit newUnit = new Unit { UnitStatusId = unit.UnitStatusId.Value, CategoryId = unit.CategoryId.Value };
-                    if (category.Manufacturer && unit.ManufacturerId != null && _context.Manufacturers.Where(x => x.Id == unit.ManufacturerId).Count() > 0)
+                    if (category.Manufacturer && unit.ManufacturerId != null && _context.Manufacturers.Find(unit.ManufacturerId) != null)
                         newUnit.ManufacturerId = unit.ManufacturerId;
                     if (category.Model)
                         newUnit.Model = unit.Model;
@@ -237,7 +230,7 @@ namespace stocktaking2.Blazor.Data
                         newUnit.InstallDate = unit.InstallDate;
                     if (category.Employer && unit.EmployerId != null)
                     {
-                        var emp = _context.Employers.Where(x => x.Id == unit.EmployerId).FirstOrDefault();
+                        var emp = _context.Employers.Find(unit.EmployerId);
                         if (emp != null)
                         {
                             newUnit.EmployerId = emp.Id;
@@ -247,10 +240,10 @@ namespace stocktaking2.Blazor.Data
                     }
                     if (category.Departament && newUnit.DepartamentId == null)
                     {
-                        if (unit.DepartamentId != null && _context.Departaments.Where(x => x.Id == unit.DepartamentId).Count() > 0)
+                        if (unit.DepartamentId != null && _context.Departaments.Find(unit.DepartamentId) != null)
                             newUnit.DepartamentId = unit.DepartamentId;
                     }
-                    if (category.WinName && unit.WinNameId != null && _context.WinNames.Where(x => x.Id == unit.WinNameId).Count() > 0)
+                    if (category.WinName && unit.WinNameId != null && _context.WinNames.Find(unit.WinNameId) != null)
                         newUnit.WinNameId = unit.WinNameId;
                     if (category.Processor)
                         newUnit.Processor = unit.Processor;
@@ -521,7 +514,6 @@ namespace stocktaking2.Blazor.Data
             UnitsPaging unitsPaging = new UnitsPaging();
             unitsPaging.Units = new List<Unit>();
             unitsPaging.TotalCount = _context.Units
-                .Where(x => !x.Disposed)
                 .Where(x => cat == 0 ? true : x.CategoryId == cat)
                 .Where(x => dep == 0 ? true : x.DepartamentId == dep)
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
@@ -541,7 +533,6 @@ namespace stocktaking2.Blazor.Data
                 .Include(x => x.Category)
                 .Include(a => a.IPAdresses)
                 .Include(x => x.UnitStatus)
-                .Where(x => !x.Disposed)
                 .Where(x => cat == 0 ? true : x.CategoryId == cat)
                 .Where(x => dep == 0 ? true : x.DepartamentId == dep)
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
@@ -561,7 +552,6 @@ namespace stocktaking2.Blazor.Data
                 .Include(x => x.Category)
                 .Include(a => a.IPAdresses)
                 .Include(x => x.UnitStatus)
-                .Where(x => !x.Disposed)
                 .Where(x => cat == 0 ? true : x.CategoryId == cat)
                 .Where(x => dep == 0 ? true : x.DepartamentId == dep)
                 .Where(x => emp == 0 ? true : x.EmployerId == emp)
@@ -575,14 +565,11 @@ namespace stocktaking2.Blazor.Data
             return Task.FromResult(unitsPaging);
         }
 
-        private bool IsEven(int a)
-        {
-            return (a % 2) == 0;
-        }
+        private bool IsEven(int a) => (a % 2) == 0;
 
         public Task<Unit> GetUnit(int id)
         {
-            Unit unit = _context.Units.Where(x => x.Id == id)
+            Unit unit = _context.Units.IgnoreQueryFilters()
                 .Include(a => a.Category)
                     .ThenInclude(r => r.Manufacturers)
                         .ThenInclude(t => t.Manufacturer)
@@ -598,108 +585,116 @@ namespace stocktaking2.Blazor.Data
                 .Include(x => x.RdpConnects)
                 .Include(x => x.ServiceWorks)
                 .Include(x => x.StoredFiles)
-                .Include(s => s.UnitHistories).FirstOrDefault();
+                .Include(s => s.UnitHistories).SingleOrDefault(x => x.Id == id);
             return Task.FromResult(unit);
         }
 
         public Task<bool> DeleteFromUnitView(int what, int id, string UserName)
         {
-            if (what == 1)
+            switch (what)
             {
-                var sw = _context.ServiceWorks.Where(x => x.Id == id).FirstOrDefault();
-                if (sw != null)
-                {
-                    _context.UnitHistories.Add(new UnitHistory
+                case 1:
+                    var sw = _context.ServiceWorks.Find(id);
+                    if (sw != null)
                     {
-                        Change = $"Ремонтная работа {quote}{sw.WorkName}. {sw.WorkDescr}.{quote} удалена",
-                        UnitId = sw.UnitId,
-                        UserName = UserName,
-                        Secure = false
-                    });
-                    _context.ServiceWorks.Remove(sw);
-                    _context.SaveChanges();
-                    return Task.FromResult(true);
-                }                
-            }
-            else if (what == 2)
-            {
-                var ip = _context.IPadresses.Where(x => x.Id == id).FirstOrDefault();
-                if (ip != null)
-                {
-                    _context.UnitHistories.Add(new UnitHistory
+                        _context.UnitHistories.Add(new UnitHistory
+                        {
+                            Change = $"Ремонтная работа {quote}{sw.WorkName}. {sw.WorkDescr}.{quote} удалена",
+                            UnitId = sw.UnitId,
+                            UserName = UserName,
+                            Secure = false
+                        });
+                        _context.ServiceWorks.Remove(sw);
+                        _context.SaveChanges();
+                        return Task.FromResult(true);
+                    }
+                    return Task.FromResult(false);
+                case 2:
+                    var ip = _context.IPadresses.Find(id);
+                    if (ip != null)
                     {
-                        Change = $"IP адрес {quote}{ip.IPAddress}{quote} удален",
-                        UnitId = ip.UnitId,
-                        UserName = UserName,
-                        Secure = true
-                    });
-                    _context.IPadresses.Remove(ip);
-                    _context.SaveChanges();
-                    return Task.FromResult(true);
-                }
-            }
-            else if (what == 3)
-            {
-                var acc = _context.WinAccounts.Where(x => x.Id == id).FirstOrDefault();
-                if (acc != null)
-                {
-                    _context.UnitHistories.Add(new UnitHistory
+                        _context.UnitHistories.Add(new UnitHistory
+                        {
+                            Change = $"IP адрес {quote}{ip.IPAddress}{quote} удален",
+                            UnitId = ip.UnitId,
+                            UserName = UserName,
+                            Secure = true
+                        });
+                        _context.IPadresses.Remove(ip);
+                        _context.SaveChanges();
+                        return Task.FromResult(true);
+                    }
+                    return Task.FromResult(false);
+                case 3:
+                    var acc = _context.WinAccounts.Find(id);
+                    if (acc != null)
                     {
-                        Change = $"Аккаунт Windows (Логин: {acc.Login}. Пароль: {acc.Password}.) удален",
-                        UnitId = acc.UnitId,
-                        UserName = UserName,
-                        Secure = true
-                    });
-                    _context.WinAccounts.Remove(acc);
-                    _context.SaveChanges();
-                    return Task.FromResult(true);
-                }
-            }
-            else if (what == 4)
-            {
-                var acc = _context.RdpConnects.Where(x => x.Id == id).FirstOrDefault();
-                if (acc != null)
-                {
-                    _context.UnitHistories.Add(new UnitHistory
+                        _context.UnitHistories.Add(new UnitHistory
+                        {
+                            Change = $"Аккаунт Windows (Логин: {acc.Login}. Пароль: {acc.Password}.) удален",
+                            UnitId = acc.UnitId,
+                            UserName = UserName,
+                            Secure = true
+                        });
+                        _context.WinAccounts.Remove(acc);
+                        _context.SaveChanges();
+                        return Task.FromResult(true);
+                    }
+                    return Task.FromResult(false);
+                case 4:
+                    var IPacc = _context.RdpConnects.Find(id);
+                    if (IPacc != null)
                     {
-                        Change = $"RDP Аккаунт (IP адрес: {acc.IPAddress}. Логин: {acc.Login}. Пароль: {acc.Password}. Комментарий: {acc.Comment}.) удален",
-                        UnitId = acc.UnitId,
-                        UserName = UserName,
-                        Secure = true
-                    });
-                    _context.RdpConnects.Remove(acc);
-                    _context.SaveChanges();
-                    return Task.FromResult(true);
-                }
-            }
-            else if (what == 5)
-            {
-                var file = _context.StoredFiles.Where(x => x.Id == id).FirstOrDefault();
-                if (file != null)
-                {
-                    _context.UnitHistories.Add(new UnitHistory
+                        _context.UnitHistories.Add(new UnitHistory
+                        {
+                            Change = $"RDP Аккаунт (IP адрес: {IPacc.IPAddress}. Логин: {IPacc.Login}. Пароль: {IPacc.Password}. Комментарий: {IPacc.Comment}.) удален",
+                            UnitId = IPacc.UnitId,
+                            UserName = UserName,
+                            Secure = true
+                        });
+                        _context.RdpConnects.Remove(IPacc);
+                        _context.SaveChanges();
+                        return Task.FromResult(true);
+                    }
+                    return Task.FromResult(false);
+                case 5:
+                    var file = _context.StoredFiles.Find(id);
+                    if (file != null)
                     {
-                        Change = $"Файл {file.FileName} удален",
-                        UnitId = file.UnitId,
-                        UserName = UserName,
-                        Secure = true
-                    });
-                    _context.StoredFiles.Remove(file);
-                    _context.SaveChanges();
-                    return Task.FromResult(true);
-                }
+                        _context.UnitHistories.Add(new UnitHistory
+                        {
+                            Change = $"Файл {file.FileName} удален",
+                            UnitId = file.UnitId,
+                            UserName = UserName,
+                            Secure = true
+                        });
+                        _context.StoredFiles.Remove(file);
+                        _context.SaveChanges();
+                        return Task.FromResult(true);
+                    }
+                    return Task.FromResult(false);
+                case 6:                    
+                    var unit = _context.Units.Find(id);
+                    if (unit != null)
+                    {
+                        _context.Units.Remove(unit);
+                        _context.SaveChanges();
+                        return Task.FromResult(true);
+                    }
+                    return Task.FromResult(false);
+                default:
+                    return Task.FromResult(false);
             }
-            return Task.FromResult(false);
         }
 
         public Task<bool> EditUnitSelectList(int what, int selected, int unitId, string UserName)
         {
-            Unit unit = _context.Units.Where(x => x.Id == unitId)
+            Unit unit = _context.Units
                 .Include(c => c.Manufacturer)
                 .Include(v => v.Employer)
                 .Include(x => x.Departament)
                 .Include(z => z.UnitStatus)
-                .Include(x => x.WinName).FirstOrDefault();
+                .Include(x => x.WinName).SingleOrDefault(x => x.Id == unitId);
             if (unit != null)
             {
                 UnitHistory unitHistory = new UnitHistory
@@ -708,51 +703,51 @@ namespace stocktaking2.Blazor.Data
                     UnitId = unitId,
                     Secure = false
                 };
-                if (what == 1)
+                switch (what)
                 {
-                    Manufacturer NewMan = null;
-                    if (selected != 0) NewMan = _context.Manufacturers.Where(x => x.Id == selected).FirstOrDefault();
-                    unitHistory.Change = $"Производитель {quote}{(unit.ManufacturerId == null ? "Не указан" : unit.Manufacturer.Name)}{quote} изменен на {quote}{(NewMan == null ? "Не указан" : NewMan.Name)}{quote}.";
-                    unit.ManufacturerId = NewMan?.Id;
-                }
-                else if (what == 2)
-                {
-                    Employer NewEmp = null;
-                    if (selected != 0) NewEmp = _context.Employers.Where(x => x.Id == selected).FirstOrDefault();
-                    unitHistory.Change = $"Сотрудник {quote}{(unit.EmployerId == null ? "Не указан" : unit.Employer.Name)}{quote} изменен на {quote}{(NewEmp == null ? "Не указан" : NewEmp.Name)}{quote}.";
-                    unit.EmployerId = NewEmp?.Id;
-                    if (NewEmp != null)
-                    {
-                        var dep = _context.Departaments.Where(x => x.Id == NewEmp.DepartamentId).FirstOrDefault();
-                        if (dep != null && dep.Id != unit.DepartamentId)
+                    case 1:
+                        Manufacturer NewMan = null;
+                        if (selected != 0) NewMan = _context.Manufacturers.Find(selected);
+                        unitHistory.Change = $"Производитель {quote}{(unit.ManufacturerId == null ? "Не указан" : unit.Manufacturer.Name)}{quote} изменен на {quote}{(NewMan == null ? "Не указан" : NewMan.Name)}{quote}.";
+                        unit.ManufacturerId = NewMan?.Id;
+                        break;
+                    case 2:
+                        Employer NewEmp = null;
+                        if (selected != 0) NewEmp = _context.Employers.Find(selected);
+                        unitHistory.Change = $"Сотрудник {quote}{(unit.EmployerId == null ? "Не указан" : unit.Employer.Name)}{quote} изменен на {quote}{(NewEmp == null ? "Не указан" : NewEmp.Name)}{quote}.";
+                        unit.EmployerId = NewEmp?.Id;
+                        if (NewEmp != null)
                         {
-                            unitHistory.Change += $" Отдел {quote}{(unit.DepartamentId == null ? "Не указан" : unit.Departament.Name)}{quote} изменен на {quote}{dep.Name}{quote}.";
-                            unit.DepartamentId = dep.Id;
+                            var dep = _context.Departaments.Find(NewEmp.DepartamentId);
+                            if (dep != null && dep.Id != unit.DepartamentId)
+                            {
+                                unitHistory.Change += $" Отдел {quote}{(unit.DepartamentId == null ? "Не указан" : unit.Departament.Name)}{quote} изменен на {quote}{dep.Name}{quote}.";
+                                unit.DepartamentId = dep.Id;
+                            }
                         }
-                    }
-                }
-                else if (what == 3)
-                {
-                    UnitStatus NewStatus = _context.UnitStatuses.Where(x => x.Id == selected).FirstOrDefault();
-                    if (NewStatus != null)
-                    {
-                        unitHistory.Change = $"Статус {quote}{unit.UnitStatus.Name}{quote} изменен на {quote}{NewStatus.Name}{quote}.";
-                        unit.UnitStatusId = NewStatus.Id;
-                    }
-                }
-                else if (what == 4)
-                {
-                    Departament NewDep = null;
-                    if (selected != 0) NewDep = _context.Departaments.Where(x => x.Id == selected).FirstOrDefault();
-                    unitHistory.Change = $"Отдел {quote}{(unit.DepartamentId == null ? "Не указан" : unit.Departament.Name)}{quote} изменен на {quote}{(NewDep == null ? "Не указан" : NewDep.Name)}{quote}.";
-                    unit.DepartamentId = NewDep?.Id;
-                }
-                else if (what == 5)
-                {
-                    WinName NewWin = null;
-                    if (selected != 0) NewWin = _context.WinNames.Where(x => x.Id == selected).FirstOrDefault();
-                    unitHistory.Change = $"Операционная система {quote}{(unit.WinNameId == null ? "Не указана" : unit.WinName.Name)}{quote} изменена на {quote}{(NewWin == null ? "Не указана" : NewWin.Name)}{quote}.";
-                    unit.WinNameId = NewWin?.Id;
+                        break;
+                    case 3:
+                        UnitStatus NewStatus = _context.UnitStatuses.Find(selected);
+                        if (NewStatus != null)
+                        {
+                            unitHistory.Change = $"Статус {quote}{unit.UnitStatus.Name}{quote} изменен на {quote}{NewStatus.Name}{quote}.";
+                            unit.UnitStatusId = NewStatus.Id;
+                        }
+                        break;
+                    case 4:
+                        Departament NewDep = null;
+                        if (selected != 0) NewDep = _context.Departaments.Find(selected);
+                        unitHistory.Change = $"Отдел {quote}{(unit.DepartamentId == null ? "Не указан" : unit.Departament.Name)}{quote} изменен на {quote}{(NewDep == null ? "Не указан" : NewDep.Name)}{quote}.";
+                        unit.DepartamentId = NewDep?.Id;
+                        break;
+                    case 5:
+                        WinName NewWin = null;
+                        if (selected != 0) NewWin = _context.WinNames.Find(selected);
+                        unitHistory.Change = $"Операционная система {quote}{(unit.WinNameId == null ? "Не указана" : unit.WinName.Name)}{quote} изменена на {quote}{(NewWin == null ? "Не указана" : NewWin.Name)}{quote}.";
+                        unit.WinNameId = NewWin?.Id;
+                        break;
+                    default:
+                        return Task.FromResult(false);
                 }
                 _context.UnitHistories.Add(unitHistory);
                 _context.Entry(unit).State = EntityState.Modified;
@@ -767,7 +762,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditUnitIntInput(int count, int unitId, string UserName)
         {
-            Unit unit = _context.Units.Where(x => x.Id == unitId).FirstOrDefault();
+            Unit unit = _context.Units.Find(unitId);
             if (unit != null)
             {
                 _context.UnitHistories.Add(new UnitHistory
@@ -791,9 +786,34 @@ namespace stocktaking2.Blazor.Data
             }
         }
 
+        public Task<bool> UnitDispose(int unitId, DateTime disposeDate, string disposeReason, string UserName)
+        {
+            Unit unit = _context.Units.Find(unitId);
+            if (unit != null)
+            {
+                _context.UnitHistories.Add(new UnitHistory
+                {
+                    Change = $"Техника списана {disposeDate:d} пользователем {UserName}. Причина: {disposeReason}",
+                    Secure = false,
+                    UnitId = unit.Id,
+                    UserName = UserName
+                });
+                unit.DisposeDate = disposeDate;
+                unit.DisposeReason = disposeReason;
+                unit.Disposed = true;
+                _context.Entry(unit).State = EntityState.Modified;
+                _context.SaveChanges();
+                return Task.FromResult(true);
+            }
+            else
+            {
+                return Task.FromResult(false);
+            }
+        }
+
         public Task<bool> EditUnitDateInput(int what, DateTime? newDate, int unitId, string UserName)
         {
-            Unit unit = _context.Units.Where(x => x.Id == unitId).FirstOrDefault();
+            Unit unit = _context.Units.Find(unitId);
             if (unit != null)
             {
                 UnitHistory unitHistory = new UnitHistory
@@ -802,15 +822,18 @@ namespace stocktaking2.Blazor.Data
                     UnitId = unitId,
                     Secure = false
                 };
-                if (what == 1)
+                switch (what)
                 {
-                    unitHistory.Change = $"Дата приобретения {quote}{(unit.BuyDate == null ? "Не указана" : unit.BuyDate.Value.ToString("d"))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d"))}{quote}.";
-                    unit.BuyDate = newDate;
-                }
-                else if (what == 2)
-                {
-                    unitHistory.Change = $"Дата установки {quote}{(unit.InstallDate == null ? "Не указана" : unit.InstallDate.Value.ToString("d"))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d"))}{quote}.";
-                    unit.InstallDate = newDate;
+                    case 1:
+                        unitHistory.Change = $"Дата приобретения {quote}{(unit.BuyDate == null ? "Не указана" : unit.BuyDate.Value.ToString("d"))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d"))}{quote}.";
+                        unit.BuyDate = newDate;
+                        break;
+                    case 2:
+                        unitHistory.Change = $"Дата установки {quote}{(unit.InstallDate == null ? "Не указана" : unit.InstallDate.Value.ToString("d"))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d"))}{quote}.";
+                        unit.InstallDate = newDate;
+                        break;
+                    default:
+                        return Task.FromResult(false);
                 }
                 _context.UnitHistories.Add(unitHistory);
                 _context.Entry(unit).State = EntityState.Modified;
@@ -825,7 +848,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool>EditUnitTextarea(int what, string newName, int unitId, string UserName)
         {
-            Unit unit = _context.Units.Where(x => x.Id == unitId).FirstOrDefault();
+            Unit unit = _context.Units.Find(unitId);
             if (unit != null)
             {
                 UnitHistory unitHistory = new UnitHistory
@@ -834,16 +857,19 @@ namespace stocktaking2.Blazor.Data
                     UnitId = unitId,
                     Secure = false
                 };
-                if (what == 1)
+                switch (what)
                 {
-                    unitHistory.Change = $"Характеристики {quote}{unit.Specs}{quote} изменены на {quote}{newName}{quote}.";
-                    unit.Specs = newName;
-                }
-                else if (what == 2)
-                {
-                    unitHistory.Change = $"Комментарий {quote}{unit.Comment}{quote} изменен на {quote}{newName}{quote}.";
-                    unitHistory.Secure = true;
-                    unit.Comment = newName;
+                    case 1:
+                        unitHistory.Change = $"Характеристики {quote}{unit.Specs}{quote} изменены на {quote}{newName}{quote}.";
+                        unit.Specs = newName;
+                        break;
+                    case 2:
+                        unitHistory.Change = $"Комментарий {quote}{unit.Comment}{quote} изменен на {quote}{newName}{quote}.";
+                        unitHistory.Secure = true;
+                        unit.Comment = newName;
+                        break;
+                    default:
+                        return Task.FromResult(false);
                 }
                 _context.UnitHistories.Add(unitHistory);
                 _context.Entry(unit).State = EntityState.Modified;
@@ -858,7 +884,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditUnitOneInput(int what, string newName, int unitId, string UserName)
         {
-            Unit unit = _context.Units.Where(x => x.Id == unitId).FirstOrDefault();
+            Unit unit = _context.Units.Find(unitId);
             if (unit != null)
             {
                 UnitHistory unitHistory = new UnitHistory
@@ -867,57 +893,52 @@ namespace stocktaking2.Blazor.Data
                     UnitId = unitId,
                     Secure = false
                 };
-                if (what == 1)
+                switch (what)
                 {
-                    unitHistory.Change = $"Модель {quote}{unit.Model}{quote} изменена на {quote}{newName}{quote}.";
-                    unit.Model = newName;
-                }
-                else if (what == 2)
-                {
-                    unitHistory.Change = $"Местоположение {quote}{unit.Location}{quote} изменено на {quote}{newName}{quote}.";
-                    unit.Location = newName;
-                }
-                else if (what == 3)
-                {
-                    unitHistory.Change = $"Инвентарный номер {quote}{unit.InventId}{quote} изменен на {quote}{newName}{quote}.";
-                    unit.InventId = newName;
-                }
-                else if (what == 4)
-                {
-                    unitHistory.Change = $"Серийный номер {quote}{unit.Serial}{quote} изменен на {quote}{newName}{quote}.";
-                    unit.Serial = newName;
-                }
-                else if (what == 5)
-                {
-                    unitHistory.Change = $"Процессор {quote}{unit.Processor}{quote} изменен на {quote}{newName}{quote}.";
-                    unit.Processor = newName;
-                }
-                else if (what == 6)
-                {
-                    unitHistory.Change = $"Материнская плата {quote}{unit.Motherboard}{quote} изменена на {quote}{newName}{quote}.";
-                    unit.Motherboard = newName;
-                }
-                else if (what == 7)
-                {
-                    unitHistory.Change = $"Оперативная память {quote}{unit.DDR}{quote} изменена на {quote}{newName}{quote}.";
-                    unit.DDR = newName;
-                }
-                else if (what == 8)
-                {
-                    unitHistory.Change = $"Модель картриджа {quote}{unit.CartridgeModel}{quote} изменена на {quote}{newName}{quote}.";
-                    unit.CartridgeModel = newName;
-                }
-                else if (what == 9)
-                {
-                    unitHistory.Change = $"Сетевое имя {quote}{unit.NetName}{quote} изменено на {quote}{newName}{quote}.";
-                    unitHistory.Secure = true;
-                    unit.NetName = newName;
-                }
-                else if (what == 10)
-                {
-                    unitHistory.Change = $"Пароль BIOS {quote}{unit.BiosPass}{quote} изменен на {quote}{newName}{quote}.";
-                    unitHistory.Secure = true;
-                    unit.BiosPass = newName;
+                    case 1:
+                        unitHistory.Change = $"Модель {quote}{unit.Model}{quote} изменена на {quote}{newName}{quote}.";
+                        unit.Model = newName;
+                        break;
+                    case 2:
+                        unitHistory.Change = $"Местоположение {quote}{unit.Location}{quote} изменено на {quote}{newName}{quote}.";
+                        unit.Location = newName;
+                        break;
+                    case 3:
+                        unitHistory.Change = $"Инвентарный номер {quote}{unit.InventId}{quote} изменен на {quote}{newName}{quote}.";
+                        unit.InventId = newName;
+                        break;
+                    case 4:
+                        unitHistory.Change = $"Серийный номер {quote}{unit.Serial}{quote} изменен на {quote}{newName}{quote}.";
+                        unit.Serial = newName;
+                        break;
+                    case 5:
+                        unitHistory.Change = $"Процессор {quote}{unit.Processor}{quote} изменен на {quote}{newName}{quote}.";
+                        unit.Processor = newName;
+                        break;
+                    case 6:
+                        unitHistory.Change = $"Материнская плата {quote}{unit.Motherboard}{quote} изменена на {quote}{newName}{quote}.";
+                        unit.Motherboard = newName;
+                        break;
+                    case 7:
+                        unitHistory.Change = $"Оперативная память {quote}{unit.DDR}{quote} изменена на {quote}{newName}{quote}.";
+                        unit.DDR = newName;
+                        break;
+                    case 8:
+                        unitHistory.Change = $"Модель картриджа {quote}{unit.CartridgeModel}{quote} изменена на {quote}{newName}{quote}.";
+                        unit.CartridgeModel = newName;
+                        break;
+                    case 9:
+                        unitHistory.Change = $"Сетевое имя {quote}{unit.NetName}{quote} изменено на {quote}{newName}{quote}.";
+                        unitHistory.Secure = true;
+                        unit.NetName = newName;
+                        break;
+                    case 10:
+                        unitHistory.Change = $"Пароль BIOS {quote}{unit.BiosPass}{quote} изменен на {quote}{newName}{quote}.";
+                        unitHistory.Secure = true;
+                        unit.BiosPass = newName;
+                        break;
+                    default:
+                        return Task.FromResult(false);
                 }
                 _context.UnitHistories.Add(unitHistory);
                 _context.Entry(unit).State = EntityState.Modified;
@@ -965,9 +986,9 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditSofts(Dictionary<string, bool> softs, int id, string UserName)
         {
-            Unit edit = _context.Units.Where(x => x.Id == id)
+            Unit edit = _context.Units
                 .Include(x => x.UnitInstalledSofts)
-                    .ThenInclude(x => x.InstalledSoft).FirstOrDefault();            
+                    .ThenInclude(x => x.InstalledSoft).SingleOrDefault(x => x.Id == id);            
             if (edit != null)
             {
                 int changes = 0;
@@ -983,14 +1004,12 @@ namespace stocktaking2.Blazor.Data
                         {
                             if (soft.Value)
                             {
-                                //add
                                 changes++;
                                 Add.Add(check.Name);
                                 _context.UnitInstalledSofts.Add(new UnitInstalledSofts { InstalledSoftId = check.Id, UnitId = edit.Id });
                             }
                             else
                             {
-                                //remove
                                 var forDel = _context.UnitInstalledSofts.Where(x => x.InstalledSoftId == check.Id && x.UnitId == edit.Id).FirstOrDefault();
                                 if (forDel != null)
                                 {
@@ -1020,7 +1039,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> AddUnitIP(string ip, int id, string UserName)
         {
-            var unit = _context.Units.Where(x => x.Id == id).FirstOrDefault();
+            var unit = _context.Units.Find(id);
             if (unit != null)
             {
                 try
@@ -1083,7 +1102,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditInstalledSoft(InstalledSoft cat, string UserName)
         {
-            var Existing = _context.InstalledSofts.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.InstalledSofts.Find(cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -1110,7 +1129,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> DeleteInstalledSoft(InstalledSoft cat, string UserName)
         {
-            var Existing = _context.InstalledSofts.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.InstalledSofts.Find(cat.Id);
             if (Existing != null)
             {
                 _context.InstalledSoftHistories.Add(new InstalledSoftHistory { Changes = $"Программное обеспечение {quote}{cat.Name}{quote} удалено.", UserName = UserName });
@@ -1205,7 +1224,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditManufacturer(ManForm cat, string UserName)
         {
-            var Existing = _context.Manufacturers.Where(x => x.Id == cat.Id).Include(x => x.Categories).FirstOrDefault();
+            var Existing = _context.Manufacturers.Include(x => x.Categories).SingleOrDefault(x => x.Id == cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -1263,7 +1282,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> DeleteManufacturer(Manufacturer cat, string UserName)
         {
-            var Existing = _context.Manufacturers.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.Manufacturers.Find(cat.Id);
             if (Existing != null)
             {
                 _context.ManufacturerHistories.Add(new ManufacturerHistory { Changes = $"Производитель {quote}{cat.Name}{quote} удален.", UserName = UserName });
@@ -1321,7 +1340,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditWinName(WinName cat, string UserName)
         {
-            var Existing = _context.WinNames.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.WinNames.Find(cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -1348,7 +1367,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> DeleteWinName(WinName cat, string UserName)
         {
-            var Existing = _context.WinNames.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.WinNames.Find(cat.Id);
             if (Existing != null)
             {
                 _context.WinNameHistories.Add(new WinNameHistory { Changes = $"Операционная система {quote}{cat.Name}{quote} удалена.", UserName = UserName });
@@ -1408,7 +1427,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditDepartament(Departament cat, string UserName)
         {
-            var Existing = _context.Departaments.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.Departaments.Find(cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -1440,7 +1459,7 @@ namespace stocktaking2.Blazor.Data
             {
                 if (Existing.Employers.Count > 0 && newcat != 0)
                 {
-                    var NewDep = _context.Departaments.Where(x => x.Id == newcat).FirstOrDefault();
+                    var NewDep = _context.Departaments.Find(newcat);
                     if (NewDep != null)
                     {
                         foreach (var emp in Existing.Employers.ToList())
@@ -1506,7 +1525,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> CreateEmployer(Employer cat, string UserName)
         {
-            var Departament = _context.Departaments.Where(x => x.Id == cat.DepartamentId).FirstOrDefault();
+            var Departament = _context.Departaments.Find(cat.DepartamentId);
             if (Departament != null)
             {
                 cat.Name = cat.LastName + " " + cat.FirstName + " " + cat.FatherName;
@@ -1523,7 +1542,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditEmployer(Employer cat, string UserName)
         {
-            var Existing = _context.Employers.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.Employers.Find(cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -1554,7 +1573,7 @@ namespace stocktaking2.Blazor.Data
                 }
                 if (cat.DepartamentId != Existing.DepartamentId)
                 {
-                    var newdep = _context.Departaments.Where(x => x.Id == cat.DepartamentId).FirstOrDefault();
+                    var newdep = _context.Departaments.Find(cat.DepartamentId);
                     if (newdep != null)
                     {
                         Changes += $" Отдел изменена на {quote}{newdep.Name}{quote}. ";
@@ -1579,7 +1598,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> DeleteEmployer(Employer cat, string UserName)
         {
-            var Existing = _context.Employers.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.Employers.Find(cat.Id);
             if (Existing != null)
             {
                 _context.EmployerHistories.Add(new EmployerHistory { Changes = $"Сотрудник {quote}{cat.Name}{quote} удален.", UserName = UserName });
@@ -1629,7 +1648,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditStatus(UnitStatus cat, string UserName)
         {
-            var Existing = _context.UnitStatuses.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.UnitStatuses.Find(cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -1661,7 +1680,7 @@ namespace stocktaking2.Blazor.Data
             {
                 if (Existing.Units.Count > 0 && newcat != 0)
                 {
-                    var NewStatus = _context.UnitStatuses.Where(x => x.Id == newcat).FirstOrDefault();
+                    var NewStatus = _context.UnitStatuses.Find(newcat);
                     if (NewStatus != null)
                     {
                         foreach (var unit in Existing.Units.ToList())
@@ -1762,7 +1781,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> EditCategory(Category cat, string UserName)
         {
-            var Existing = _context.Categories.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.Categories.Find(cat.Id);
             if (Existing != null)
             {
                 int changes = 0;
@@ -2023,7 +2042,7 @@ namespace stocktaking2.Blazor.Data
             {
                 if (Existing.Units.Count > 0 && newcat != 0)
                 {
-                    var NewCategory = _context.Categories.Where(x => x.Id == newcat).FirstOrDefault();
+                    var NewCategory = _context.Categories.Find(newcat);
                     if (NewCategory != null)
                     {
                         foreach (var unit in Existing.Units.ToList())
@@ -2122,7 +2141,7 @@ namespace stocktaking2.Blazor.Data
         #region UserSettings
         public Task<UserSettings> GetSettings(string id, bool admin)
         {
-            UserSettings userSettings = _context.UserSettings.Where(x => x.UserID == id).FirstOrDefault();
+            UserSettings userSettings = _context.UserSettings.SingleOrDefault(x => x.UserID == id);
             if (userSettings == null)
             {
                 userSettings = new UserSettings 
@@ -2145,7 +2164,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> SaveSettings(int id)
         {
-            UserSettings userSettings = _context.UserSettings.Where(x => x.Id == id).FirstOrDefault();
+            UserSettings userSettings = _context.UserSettings.Find(id);
             if (userSettings != null)
             {
                 _context.Entry(userSettings).State = EntityState.Modified;
@@ -2222,7 +2241,7 @@ namespace stocktaking2.Blazor.Data
                 {
                     if (cat.EmployerId != 0)
                     {
-                        var emp = _context.Employers.Where(x => x.Id == cat.EmployerId).FirstOrDefault();
+                        var emp = _context.Employers.Find(cat.EmployerId);
                         if (emp != null)
                         {
                             Changes += $" Сотрудник {quote}{Existing.Employer?.Name}{quote} изменен на {quote}{emp.Name}{quote}. ";
@@ -2253,7 +2272,7 @@ namespace stocktaking2.Blazor.Data
 
         public Task<bool> DeleteEmail(Email cat, string UserName)
         {
-            var Existing = _context.Emails.Where(x => x.Id == cat.Id).FirstOrDefault();
+            var Existing = _context.Emails.Find(cat.Id);
             if (Existing != null)
             {
                 _context.EmailHistories.Add(new EmailHistory { Changes = $"Аккаунт email {quote}{cat.Login}{quote} удален.", UserName = UserName });
@@ -2272,10 +2291,9 @@ namespace stocktaking2.Blazor.Data
         public Task<IndexPageData> GetIndexPageData()
         {
             IndexPageData data = new IndexPageData();
-            data.UnitsCount = _context.Units
-                .Where(x => !x.Disposed).Count();
+            data.UnitsCount = _context.Units.Count();
             data.Last5Units = _context.Units
-                .Where(x => !x.Disposed).OrderByDescending(x => x.DateCreated).Take(5).ToList();
+                .Include(x => x.Category).OrderByDescending(x => x.DateCreated).Take(5).ToList();
             var SW = _context.ServiceWorks.OrderByDescending(x => x.WorkDate).ToList().Where(x => x.WorkDate >= DateTime.Now.AddMonths(-1));
             data.ServiceWorksMounthCount = SW.Count();
             data.Last5ServiceWorks = SW.Take(5).ToList();
@@ -2450,7 +2468,6 @@ namespace stocktaking2.Blazor.Data
                 .Include(s => s.WinAccounts)
                 .Include(x => x.RdpConnects)
                 .Include(x => x.ServiceWorks)
-                .Where(x => !x.Disposed)
                 .Where(x => report.catFilter > 0 ? x.CategoryId == report.catFilter : true)
                 .Where(x => report.depFilter > 0 ? x.DepartamentId == report.depFilter : true)
                 .Where(x => report.empFilter > 0 ? x.EmployerId == report.empFilter : true)

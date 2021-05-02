@@ -43,6 +43,7 @@ namespace stocktaking2.Blazor.Data.DB
         public DateTime DateCreated { get; set; }
         public bool Disposed { get; set; }
         public DateTime? DisposeDate { get; set; }
+        public string DisposeReason { get; set; }
         public Unit()
         {
             StoredFiles = new List<StoredFile>();

@@ -42,7 +42,7 @@
                                     <div class="list-group list-group-flush">
                                         @foreach (var unit in data.Last5Units)
                                         {
-                                            <a href=/unit/@unit.Id class="list-group-item list-group-item-action">@(!string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана")</a>
+                                            <a href=/unit/@unit.Id class="list-group-item list-group-item-action">@(unit.Category.Name + " " + (!string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана"))</a>
                                         }
                                     </div>
                                 </div>

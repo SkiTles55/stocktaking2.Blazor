@@ -39,7 +39,10 @@
                             @if (unit.Disposed)
                             {
                                 <div class="form-group row">
-                                    <p class="text-danger">Оборудование списано @unit.DisposeDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</p>
+                                    <div class="alert alert-danger" role="alert">
+                                        <h4 class="alert-heading">Оборудование списано @unit.DisposeDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</h4>
+                                        <p>Причина: @unit.DisposeReason</p>
+                                    </div>
                                 </div>
                             }
                             @if (unit.Category.Manufacturer)
@@ -51,7 +54,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.ManufacturerId != null ? unit.Manufacturer.Name : "Не указан")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(1))">
@@ -70,7 +73,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(!string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(1))">
@@ -80,22 +83,25 @@
                                     }
                                 </div>
                             }
-                            <div class="form-group row">
-                                <div class="col-3">
-                                    <p>Статус</p>
-                                </div>
-                                <div class="col-md-auto">
-                                    <p><b>@unit.UnitStatus.Name</b></p>
-                                </div>
-                                @if (@context.User.IsInRole("Admin"))
-                                {
-                                    <div class="col-1">
-                                        <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(3))">
-                                            <i class="far fa-edit"></i>
-                                        </button>
+                            @if (!unit.Disposed)
+                            {
+                                <div class="form-group row">
+                                    <div class="col-3">
+                                        <p>Статус</p>
                                     </div>
-                                }
-                            </div>
+                                    <div class="col-md-auto">
+                                        <p><b>@unit.UnitStatus.Name</b></p>
+                                    </div>
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
+                                    {
+                                        <div class="col-1">
+                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(3))">
+                                                <i class="far fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    }
+                                </div>
+                            }
                             @if (unit.Category.Location)
                             {
                                 <div class="form-group row">
@@ -105,7 +111,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.Location ?? "Не указано")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(2))">
@@ -124,7 +130,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.InventId ?? "Не указан")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(3))">
@@ -143,7 +149,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.Serial ?? "Не указан")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(4))">
@@ -162,7 +168,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d") : "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditDateInput(1))">
@@ -181,7 +187,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d") : "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditDateInput(2))">
@@ -200,7 +206,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.EmployerId != null ? unit.Employer.Name : "Не указан")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(2))">
@@ -219,7 +225,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.DepartamentId != null ? unit.Departament.Name : "Не указан")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin") && unit.EmployerId == null)
+                                    @if (@context.User.IsInRole("Admin") && unit.EmployerId == null && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(4))">
@@ -238,7 +244,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.WinNameId != null ? unit.WinName.Name : "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSelectList(5))">
@@ -257,7 +263,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.Processor ?? "Не указан")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(5))">
@@ -276,7 +282,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.Motherboard ?? "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(6))">
@@ -295,7 +301,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.DDR ?? "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(7))">
@@ -314,7 +320,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.Specs ?? "Не указаны")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditTextarea(1))">
@@ -333,7 +339,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.CartridgeModel ?? "Не указана")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(8))">
@@ -352,7 +358,7 @@
                                     <div class="col-md-auto">
                                         <p><b>@(unit.CartridgeCount != null ? unit.CartridgeCount.ToString() : "Не указано")</b></p>
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditIntInput())">
@@ -376,7 +382,7 @@
                                                     <tr>
                                                         <th>Дата</th>
                                                         <th>Имя файла</th>
-                                                        @if (@context.User.IsInRole("Admin"))
+                                                        @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                                         {
                                                             <th></th>
                                                         }
@@ -388,7 +394,7 @@
                                                         <tr>
                                                             <td>@sw.UploadData.ToString("d")</td>
                                                             <td><button class="btn btn-link" @onclick="@(()=>DownloadFile(sw))">@sw.FileName</button></td>
-                                                            @if (@context.User.IsInRole("Admin"))
+                                                            @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                                             {
                                                                 <td>
                                                                     <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteF(sw))">
@@ -406,7 +412,7 @@
                                             <p><b>Файлы отсутствуют</b></p>
                                         }
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-md-auto">
                                             <BlazorInputFile.InputFile OnChange="HandleSelection" />
@@ -430,7 +436,7 @@
                                                         <th>Дата</th>
                                                         <th>Название</th>
                                                         <th>Описание</th>
-                                                        @if (@context.User.IsInRole("Admin"))
+                                                        @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                                         {
                                                             <th></th>
                                                         }
@@ -443,7 +449,7 @@
                                                             <td>@sw.WorkDate.ToString("d")</td>
                                                             <td>@sw.WorkName</td>
                                                             <td>@sw.WorkDescr</td>
-                                                            @if (@context.User.IsInRole("Admin"))
+                                                            @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                                             {
                                                                 <td>
                                                                     <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteSW(sw))">
@@ -461,7 +467,7 @@
                                             <p><b>Не указаны</b></p>
                                         }
                                     </div>
-                                    @if (@context.User.IsInRole("Admin"))
+                                    @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
                                         <div class="col-1">
                                             <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewSW())">
@@ -492,11 +498,14 @@
                                                 <p><b>Не указано</b></p>
                                             }
                                         </div>
-                                        <div class="col-1">
-                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSofts())">
-                                                <i class="far fa-edit"></i>
-                                            </button>
-                                        </div>
+                                        @if (!unit.Disposed)
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditSofts())">
+                                                    <i class="far fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 @if (unit.Category.IPAdresses)
@@ -512,7 +521,10 @@
                                                     <thead>
                                                         <tr>
                                                             <th>IP адрес</th>
-                                                            <th></th>
+                                                            @if (!unit.Disposed)
+                                                            {
+                                                                <th></th>
+                                                            }
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -520,11 +532,14 @@
                                                         {
                                                             <tr>
                                                                 <td>@sw.IPAddress</td>
-                                                                <td>
-                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteIP(sw))">
-                                                                        <i class="fas fa-trash-alt"></i>
-                                                                    </button>
-                                                                </td>
+                                                                @if (!unit.Disposed)
+                                                                {
+                                                                    <td>
+                                                                        <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteIP(sw))">
+                                                                            <i class="fas fa-trash-alt"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                }
                                                             </tr>
                                                         }
                                                     </tbody>
@@ -535,11 +550,14 @@
                                                 <p><b>Не указаны</b></p>
                                             }
                                         </div>
-                                        <div class="col-1">
-                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewIP())">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        @if (!unit.Disposed)
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewIP())">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 @if (unit.Category.NetName)
@@ -551,11 +569,14 @@
                                         <div class="col-md-auto">
                                             <p><b>@(unit.NetName ?? "Не указано")</b></p>
                                         </div>
-                                        <div class="col-1">
-                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(9))">
-                                                <i class="far fa-edit"></i>
-                                            </button>
-                                        </div>
+                                        @if (!unit.Disposed)
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(9))">
+                                                    <i class="far fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 @if (unit.Category.BiosPass)
@@ -567,11 +588,14 @@
                                         <div class="col-md-auto">
                                             <p><b>@(unit.BiosPass ?? "Не указан")</b></p>
                                         </div>
-                                        <div class="col-1">
-                                            <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(10))">
-                                                <i class="far fa-edit"></i>
-                                            </button>
-                                        </div>
+                                        @if (!unit.Disposed)
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditOneInput(10))">
+                                                    <i class="far fa-edit"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 @if (unit.Category.WinAccounts)
@@ -588,7 +612,10 @@
                                                         <tr>
                                                             <th>Логин</th>
                                                             <th>Пароль</th>
-                                                            <th></th>
+                                                            @if (!unit.Disposed)
+                                                            {
+                                                                <th></th>
+                                                            }
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -597,11 +624,14 @@
                                                             <tr>
                                                                 <td>@acc.Login</td>
                                                                 <td>@acc.Password</td>
-                                                                <th>
-                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteWA(acc))">
-                                                                        <i class="fas fa-trash-alt"></i>
-                                                                    </button>
-                                                                </th>
+                                                                @if (!unit.Disposed)
+                                                                {
+                                                                    <th>
+                                                                        <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteWA(acc))">
+                                                                            <i class="fas fa-trash-alt"></i>
+                                                                        </button>
+                                                                    </th>
+                                                                }
                                                             </tr>
                                                         }
                                                     </tbody>
@@ -612,11 +642,14 @@
                                                 <p><b>Не указаны</b></p>
                                             }
                                         </div>
-                                        <div class="col-1">
-                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewWAcc())">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        @if (!unit.Disposed)
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewWAcc())">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 @if (unit.Category.RdpConnects)
@@ -635,7 +668,10 @@
                                                             <th>Пароль</th>
                                                             <th>IP адрес</th>
                                                             <th>Комментарий</th>
-                                                            <th></th>
+                                                            @if (!unit.Disposed)
+                                                            {
+                                                                <th></th>
+                                                            }
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -646,11 +682,14 @@
                                                                 <td>@acc.Password</td>
                                                                 <td>@acc.IPAddress</td>
                                                                 <td>@acc.Comment</td>
-                                                                <td>
-                                                                    <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteRDP(acc))">
-                                                                        <i class="fas fa-trash-alt"></i>
-                                                                    </button>
-                                                                </td>
+                                                                @if (!unit.Disposed)
+                                                                {
+                                                                    <td>
+                                                                        <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="(()=>DeleteRDP(acc))">
+                                                                            <i class="fas fa-trash-alt"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                }
                                                             </tr>
                                                         }
                                                     </tbody>
@@ -661,11 +700,14 @@
                                                 <p><b>Не указаны</b></p>
                                             }
                                         </div>
-                                        <div class="col-1">
-                                            <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewRDP())">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
+                                        @if (!unit.Disposed)
+                                        {
+                                            <div class="col-1">
+                                                <button class="btn btn-success btn-circle btn-sm" title="Добавить" @onclick="(()=>AddNewRDP())">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        }
                                     </div>
                                 }
                                 @if (unit.Category.Comments)
@@ -677,7 +719,7 @@
                                         <div class="col-md-auto">
                                             <p><b>@(unit.Comment ?? "Не указаны")</b></p>
                                         </div>
-                                        @if (@context.User.IsInRole("Admin"))
+                                        @if (!unit.Disposed)
                                         {
                                             <div class="col-1">
                                                 <button class="btn btn-light btn-circle btn-sm" title="Редактировать" @onclick="(()=>EditTextarea(2))">
@@ -692,6 +734,34 @@
                     </div>
                 </div>
                 <div class="col-xl-4 col-lg-5">
+                    @if (CurrentUser.IsInRole("Admin"))
+                    {
+                        <div class="card shadow mb-4 border-left-primary">
+                            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                <h5 class="m-0 font-weight-bold text-primary">Действия</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (unit.Disposed)
+                                {
+                                    <!--<button class="btn btn-warning btn-block">
+            <i class="fas fa-trash-restore-alt"></i>
+            Восстановить
+        </button>-->
+                                    <button class="btn btn-secondary btn-block" @onclick="DeleteUnit">
+                                        <i class="fas fa-trash"></i>
+                                        Удалить
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-danger btn-block" @onclick="DisposeUnit">
+                                        <i class="fas fa-trash-alt"></i>
+                                        Списать
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
                     <div class="card shadow mb-4 border-left-primary">
                         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
                             <h5 class="m-0 font-weight-bold text-primary">История изменений</h5>
@@ -738,6 +808,26 @@
             </ModalHistory>
             @if (@context.User.IsInRole("Admin"))
             {
+                <ModalWindow @ref="DisposeDialog" Title="@ModalTitle" ModalButtonOK="Списать" OnClick="(() => DisposeUnitSave())" YesButtonIcon="fas fa-trash-alt">
+                    <div class="form-group row">
+                        <label for="disdate" class="col-3 col-form-label">Дата</label>
+                        <div class="col">
+                            <input id="disdate" name="text" type="date" class="form-control" @bind="@unit.DisposeDate">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="disdescr" class="col-3 col-form-label">Причина</label>
+                        <div class="col">
+                            <input id="disdescr" name="text" type="text" class="form-control" @bind="@unit.DisposeReason">
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(error))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            <i class="fas fa-exclamation-circle"></i> @error
+                        </div>
+                    }
+                </ModalWindow>
                 <ModalWindow @ref="modal1" Title="@ModalTitle" ModalButtonOK="Сохранить" OnClick="(() => SaveOneInputChanges())">
                     <div class="form-group">
                         <input class="form-control" type="text" @bind="forEdit" />
@@ -946,9 +1036,9 @@
     string error = string.Empty;
     ModalWindow softsModal;
     Dictionary<string, bool> SoftDict;
-    int ip1 = 10;
-    int ip2 = 30;
-    int ip3 = 125;
+    int ip1 = 192;
+    int ip2 = 168;
+    int ip3 = 0;
     int ip4 = 1;
     ModalAddDialog ipDialog;
     IPs IPforDel;
@@ -965,6 +1055,7 @@
     string status;
     StoredFile fileForDel;
     bool FullLoaded = false;
+    ModalWindow DisposeDialog;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1030,9 +1121,9 @@
 
     void AddNewIP()
     {
-        ip1 = 10;
-        ip2 = 30;
-        ip3 = 125;
+        ip1 = 192;
+        ip2 = 168;
+        ip3 = 0;
         ip4 = 1;
         ipDialog.Show();
     }
@@ -1103,6 +1194,30 @@
         addWA.Show();
     }
 
+    void DisposeUnit()
+    {
+        ModalTitle = $"Списание техники {unit.Category.Name} {(string.IsNullOrEmpty(unit.Model) ? "Не указана" : unit.Model)}";
+        error = string.Empty;
+        DisposeDialog.Show();
+    }
+
+    void DisposeUnitSave()
+    {
+        if (unit.DisposeDate == null)
+        {
+            error = "Введите дату списания";
+            return;
+        }
+        if (string.IsNullOrEmpty(unit.DisposeReason))
+        {
+            error = "Введите причину списания";
+            return;
+        }
+        error = string.Empty;
+        var result = @Service.UnitDispose(unit.Id, unit.DisposeDate.Value, unit.DisposeReason, CurrentUser.Identity.Name);
+        DisposeDialog.Show();
+    }
+
     void DeleteSW(ServiceWork sw)
     {
         SWforDel = sw;
@@ -1143,29 +1258,37 @@
         modalYesNo.Show();
     }
 
+    void DeleteUnit()
+    {
+        What = 6;
+        ModalTitle = $"Действительно хотите удалить технику {unit.Category.Name} {(string.IsNullOrEmpty(unit.Model) ? "Не указана" : unit.Model)}?";
+        modalYesNo.Show();
+    }
+
     void Del(int what)
     {
         modalYesNo.Show();
         int id = 0;
-        if (what == 1)
+        switch (what)
         {
-            id = SWforDel.Id;
-        }
-        else if (what == 2)
-        {
-            id = IPforDel.Id;
-        }
-        else if (what == 3)
-        {
-            id = WAforDel.Id;
-        }
-        else if (what == 4)
-        {
-            id = RDPforDel.Id;
-        }
-        else if (what == 5)
-        {
-            id = fileForDel.Id;
+            case 1:
+                id = SWforDel.Id;
+                break;
+            case 2:
+                id = IPforDel.Id;
+                break;
+            case 3:
+                id = WAforDel.Id;
+                break;
+            case 4:
+                id = RDPforDel.Id;
+                break;
+            case 5:
+                id = fileForDel.Id;
+                break;
+            case 6:
+                id = unit.Id;
+                break;
         }
         var result = @Service.DeleteFromUnitView(what, id, CurrentUser.Identity.Name);
         What = 0;
@@ -1308,7 +1431,7 @@
     {
         if (What == 1)
         {
-            if ((selected == 0 && unit.ManufacturerId == null) || selected == unit.ManufacturerId)
+            if (selected == null || selected == unit.ManufacturerId)
             {
                 selected = 0;
                 What = 0;
@@ -1318,7 +1441,7 @@
         }
         else if (What == 2)
         {
-            if ((selected == 0 && unit.EmployerId == null) || selected == unit.EmployerId)
+            if ((selected == null && unit.EmployerId == null) || selected == unit.EmployerId)
             {
                 selected = 0;
                 What = 0;
@@ -1328,7 +1451,7 @@
         }
         else if (What == 3)
         {
-            if (selected == unit.UnitStatusId)
+            if (selected == null || selected == unit.UnitStatusId)
             {
                 selected = 0;
                 What = 0;
@@ -1338,7 +1461,7 @@
         }
         else if (What == 4)
         {
-            if ((selected == 0 && unit.DepartamentId == null) || selected == unit.DepartamentId)
+            if ((selected == null && unit.DepartamentId == null) || selected == unit.DepartamentId)
             {
                 selected = 0;
                 What = 0;
@@ -1348,7 +1471,7 @@
         }
         else if (What == 5)
         {
-            if ((selected == 0 && unit.WinNameId == null) || selected == unit.WinNameId)
+            if ((selected == null && unit.WinNameId == null) || selected == unit.WinNameId)
             {
                 selected = 0;
                 What = 0;
@@ -1356,7 +1479,7 @@
                 return;
             }
         }
-        var result = @Service.EditUnitSelectList(What, selected.Value, unit.Id, CurrentUser.Identity.Name);
+        var result = @Service.EditUnitSelectList(What, selected != null ? selected.Value : 0, unit.Id, CurrentUser.Identity.Name);
         selected = 0;
         What = 0;
         selectModal.Show();
@@ -1601,12 +1724,15 @@
     {
         string html = "<html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"description\" content=\"\"><meta name=\"author\" content=\"\"><title>Печать карточки</title></head><body style='tab-interval:35.4pt'><div><h2 style='line-height:200%'>Карточка техники</h2><table style='border-collapse:collapse;border:none'>";
         string row = "<tr><td valign=top style='width:170pt;border-top:solid #7F7F7F 1.0pt;border-left:none;border-bottom:solid #7F7F7F 1.0pt;border-right:none;padding:8pt 5.4pt 8pt 5.4pt'><p><span style='font-size:16.0pt'>{0}</span></p></td><td valign=top style='width:600pt;border-top:solid #7F7F7F 1.0pt;border-left:none;border-bottom:solid #7F7F7F 1.0pt;border-right:none;padding:8pt 5.4pt 8pt 5.4pt'><p><b><span style='font-size:16.0pt'>{1}</span></b></p></td></tr>";
+        if (unit.Disposed)
+            html += String.Format(row, "Оборудование списано " + unit.DisposeDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")),"Причина: " + unit.DisposeReason);
         html += String.Format(row, "Тип техники", unit.Category.Name);
         if (unit.Category.Manufacturer)
             html += String.Format(row, "Производитель", unit.ManufacturerId != null ? unit.Manufacturer.Name : "Не указан");
         if (unit.Category.Model)
             html += String.Format(row, "Модель", !string.IsNullOrEmpty(unit.Model) ? unit.Model : "Не указана");
-        html += String.Format(row, "Статус техники", unit.UnitStatus.Name);
+        if (!unit.Disposed)
+            html += String.Format(row, "Статус техники", unit.UnitStatus.Name);
         if (unit.Category.Location)
             html += String.Format(row, "Местоположение", !string.IsNullOrEmpty(unit.Location) ? unit.Location : "Не указано");
         if (unit.Category.InventId)

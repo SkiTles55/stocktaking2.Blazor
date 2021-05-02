@@ -38,5 +38,11 @@ namespace stocktaking2.Blazor.Data
         {
             Database.EnsureCreated();
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+            modelBuilder.Entity<Unit>().HasQueryFilter(x => !x.Disposed);
+        }
     }
 }

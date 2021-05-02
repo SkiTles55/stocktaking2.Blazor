@@ -10,8 +10,8 @@ using stocktaking2.Blazor.Data;
 namespace stocktaking2.Blazor.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20210418061830_FirstEdit")]
-    partial class FirstEdit
+    [Migration("20210501131300_DisposedReason")]
+    partial class DisposedReason
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -725,6 +725,9 @@ namespace stocktaking2.Blazor.Migrations
 
                     b.Property<DateTime?>("DisposeDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("DisposeReason")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("Disposed")
                         .HasColumnType("bit");
