@@ -1,0 +1,117 @@
+﻿@page "/about"
+@using stocktaking2.Blazor.Helpers
+@using System.Text.Json;
+@using System.Net;
+@using System.IO;
+@using System.Globalization
+@inject IHeadElementHelper HeadElementHelper
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Список изменений</h1>
+</div>
+@if (GitHubCommits == null)
+{
+    if (!fullLoaded)
+    {
+        <PageLoadingSpinner />
+    }
+    else
+    {
+        <p><em>Ошибка. Не удалось загрузить список изменений.</em></p>
+    }
+}
+else
+{
+    <div class="row">
+        <div class="col-xl-8 col-lg-7">
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="list-group list-group-flush">
+                            @foreach (var commit in GitHubCommits)
+                            {
+                                <a href="@commit.html_url" target="_blank" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h5 class="mb-1">@DateTime.Parse(commit.commit.author.date).ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</h5>
+                                    </div>
+                                    @foreach (var ch in commit.commit.message.Split("\n"))
+                                    {
+                                        <p class="mb-1">@ch</p>
+                                    }
+                                    <small>@commit.commit.author.name</small>
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-5">
+            <div class="card border-left-primary shadow py-2 mb-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-10 mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Автор
+                            </div>
+                            <a href="https://github.com/SkiTles55" target="_blank" class="h5 mb-0 font-weight-bold text-gray-800">Дмитрий Худяков</a>
+                        </div>
+                        <div class="col-auto align-self-start">
+                            <i class="fab fa-github fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-left-primary shadow py-2 mb-4">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col-10 mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Репозиторий
+                            </div>
+                            <a href="https://github.com/SkiTles55/stocktaking2.Blazor" target="_blank" class="h5 mb-0 font-weight-bold text-gray-800">https://github.com/SkiTles55/stocktaking2.Blazor</a>
+                        </div>
+                        <div class="col-auto align-self-start">
+                            <i class="fas fa-code-branch fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+@code {
+    List<GitHubCommit> GitHubCommits;
+    bool fullLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HeadElementHelper.SetTitleAsync("Списанная техника - Учет техники");
+        await GetData();
+    }
+
+    public async Task GetData()
+    {
+        HttpWebRequest webRequest = WebRequest.Create(@"https://api.github.com/repos/SkiTles55/stocktaking2.Blazor/commits") as HttpWebRequest;
+        if (webRequest != null)
+        {
+            webRequest.Method = "GET";
+            webRequest.UserAgent = "Anything";
+            webRequest.ServicePoint.Expect100Continue = false;
+            GitHubCommits = new List<GitHubCommit>();
+
+            try
+            {
+                using (StreamReader responseReader = new StreamReader(webRequest.GetResponse().GetResponseStream()))
+                {
+                    string reader = await responseReader.ReadToEndAsync();
+                    GitHubCommits = JsonSerializer.Deserialize<GitHubCommit[]>(reader).ToList();
+                    fullLoaded = true;
+                }
+            }
+            catch
+            {
+                fullLoaded = true;
+            }
+        }
+    }
+}

@@ -743,10 +743,10 @@
                             <div class="card-body">
                                 @if (unit.Disposed)
                                 {
-                                    <!--<button class="btn btn-warning btn-block">
-            <i class="fas fa-trash-restore-alt"></i>
-            Восстановить
-        </button>-->
+                                    <button class="btn btn-warning btn-block" @onclick="RestoreUnit">
+                                        <i class="fas fa-trash-restore-alt"></i>
+                                        Восстановить
+                                    </button>
                                     <button class="btn btn-secondary btn-block" @onclick="DeleteUnit">
                                         <i class="fas fa-trash"></i>
                                         Удалить
@@ -869,7 +869,7 @@
                         <input type="number" class="form-control" @bind="@selected">
                     </div>
                 </ModalWindow>
-                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del(What)" Title="@ModalTitle"/>
+                <ModalYesNoDialog @ref="modalYesNo" OnClick="() => Del(What)" Title="@ModalTitle" />
                 <ModalAddDialog @ref="addSW" Title="Добавление ремонта" OnClick="() => AddSW()">
                     <div class="form-group row">
                         <label for="wdate" class="col-3 col-form-label">Дата</label>
@@ -1265,6 +1265,13 @@
         modalYesNo.Show();
     }
 
+    void RestoreUnit()
+    {
+        What = 7;
+        ModalTitle = $"Действительно хотите восстановить технику {unit.Category.Name} {(string.IsNullOrEmpty(unit.Model) ? "Не указана" : unit.Model)}?";
+        modalYesNo.Show();
+    }
+
     void Del(int what)
     {
         modalYesNo.Show();
@@ -1287,6 +1294,9 @@
                 id = fileForDel.Id;
                 break;
             case 6:
+                id = unit.Id;
+                break;
+            case 7:
                 id = unit.Id;
                 break;
         }
@@ -1725,7 +1735,7 @@
         string html = "<html lang=\"en\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1, shrink-to-fit=no\"><meta name=\"description\" content=\"\"><meta name=\"author\" content=\"\"><title>Печать карточки</title></head><body style='tab-interval:35.4pt'><div><h2 style='line-height:200%'>Карточка техники</h2><table style='border-collapse:collapse;border:none'>";
         string row = "<tr><td valign=top style='width:170pt;border-top:solid #7F7F7F 1.0pt;border-left:none;border-bottom:solid #7F7F7F 1.0pt;border-right:none;padding:8pt 5.4pt 8pt 5.4pt'><p><span style='font-size:16.0pt'>{0}</span></p></td><td valign=top style='width:600pt;border-top:solid #7F7F7F 1.0pt;border-left:none;border-bottom:solid #7F7F7F 1.0pt;border-right:none;padding:8pt 5.4pt 8pt 5.4pt'><p><b><span style='font-size:16.0pt'>{1}</span></b></p></td></tr>";
         if (unit.Disposed)
-            html += String.Format(row, "Оборудование списано " + unit.DisposeDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")),"Причина: " + unit.DisposeReason);
+            html += String.Format(row, "Оборудование списано " + unit.DisposeDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")), "Причина: " + unit.DisposeReason);
         html += String.Format(row, "Тип техники", unit.Category.Name);
         if (unit.Category.Manufacturer)
             html += String.Format(row, "Производитель", unit.ManufacturerId != null ? unit.Manufacturer.Name : "Не указан");

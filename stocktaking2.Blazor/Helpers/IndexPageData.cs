@@ -12,5 +12,7 @@ namespace stocktaking2.Blazor.Helpers
         public List<Unit> Last5Units { get; set; }
         public int ServiceWorksMounthCount { get; set; }
         public List<ServiceWork> Last5ServiceWorks { get; set; }
+        public int DisposedCount { get; set; }
+        public List<Unit> Last5Disposed { get; set; }
     }
 }

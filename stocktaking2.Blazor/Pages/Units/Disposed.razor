@@ -1,0 +1,1213 @@
+﻿@page "/disposed"
+@implements IDisposable
+@using stocktaking2.Blazor.Data
+@using stocktaking2.Blazor.Data.DB
+@using stocktaking2.Blazor.Helpers
+@using System.Globalization
+@using Microsoft.AspNetCore.Identity;
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> _UserManager
+@inject IJSRuntime JS
+@inject NavigationManager MyNavigationManager
+@inject IHeadElementHelper HeadElementHelper
+@inherits OwningComponentBase<DbService>
+<AuthorizeView>
+    <Authorized>
+        <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <h1 class="h3 mb-0 text-gray-800">Списанная техника</h1>
+            <ul class="nav justify-content-end">
+                <li class="nav-item">
+                    <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="Report"><i class="fas fa-download fa-sm"></i> Скачать список</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link active" href="@MyNavigationManager.Uri" @onclick="OpenSettings"><i class="fas fa-cogs fa-sm"></i> Настройки таблицы</a>
+                </li>
+            </ul>
+        </div>
+        @if (unitsPaging == null)
+        {
+            <PageLoadingSpinner />
+        }
+        else
+        {
+            <div class="card shadow mb-4 border-left-primary">
+                <a href="#collapseCardFilter" class="@(FiltersCollapse ? "d-block card-header py-3" : "d-block card-header py-3 collapsed")" data-toggle="collapse" role="button" aria-expanded="false" aria-controls="collapseCardFilter">
+                    <h6 class="m-0 font-weight-bold text-primary">Фильтры</h6>
+                </a>
+                <div class="@(FiltersCollapse ? "collapse show" : "collapse")" id="collapseCardFilter">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col pt-2 pb-2">
+                                <span>Статус</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchStatus"
+                                                   ConvertMethod="ConvertStatus"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="statuses"
+                                                   @bind-Value="@statFilter"
+                                                   Placeholder="Статус" style="height:50%">
+                                    <SelectedTemplate Context="item">
+                                        @StatusName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>Тип</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchCat"
+                                                   ConvertMethod="ConvertCat"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="categories"
+                                                   @bind-Value="@catFilter"
+                                                   Placeholder="Тип">
+                                    <SelectedTemplate Context="item">
+                                        @CatName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>Производитель</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchMan"
+                                                   ConvertMethod="ConvertMan"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="manufacturers"
+                                                   @bind-Value="@manFilter"
+                                                   Placeholder="Производитель">
+                                    <SelectedTemplate Context="item">
+                                        @ManName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>Сотрудник</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchEmp"
+                                                   ConvertMethod="ConvertEmp"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="employers"
+                                                   @bind-Value="@empFilter"
+                                                   Placeholder="Сотрудник">
+                                    <SelectedTemplate Context="item">
+                                        @EmpName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col pt-2 pb-2">
+                                <span>Отдел</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchDep"
+                                                   ConvertMethod="ConvertDep"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="departaments"
+                                                   @bind-Value="@depFilter"
+                                                   Placeholder="Отдел">
+                                    <SelectedTemplate Context="item">
+                                        @DepName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>ОС</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchWin"
+                                                   ConvertMethod="ConvertWin"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="winnames"
+                                                   @bind-Value="@winFilter"
+                                                   Placeholder="ОС">
+                                    <SelectedTemplate Context="item">
+                                        @WinName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2">
+                                <span>ПО</span>
+                                <BlazoredTypeahead MaximumSuggestions="9999999" SearchMethod="@SearchSoft"
+                                                   ConvertMethod="ConvertSoft"
+                                                   EnableDropDown="true"
+                                                   ShowDropDownOnFocus="true"
+                                                   Items="softs"
+                                                   @bind-Value="@softFilter"
+                                                   Placeholder="ПО">
+                                    <SelectedTemplate Context="item">
+                                        @SoftName(item)
+                                    </SelectedTemplate>
+                                    <ResultTemplate Context="item">
+                                        @item.Name
+                                    </ResultTemplate>
+                                    <NotFoundTemplate Context="decoy">Не найдено</NotFoundTemplate>
+                                </BlazoredTypeahead>
+                            </div>
+                            <div class="col pt-2 pb-2 align-self-end">
+                                <a class="btn btn-success btn-block" href="@("/disposed?depId=" + depFilter + "&empId=" + empFilter + "&winId=" + winFilter + "&softId=" + softFilter + "&catId=" + catFilter + "&manId=" + manFilter + "&statId=" + statFilter)">
+                                    <i class="fa fa-filter"></i> Применить
+                                </a>
+                            </div>
+                            <div class="col pt-2 pb-2 align-self-end">
+                                <a class="btn btn-danger btn-block" href="/disposed?depId=0&empId=0&winId=0&softId=0&catId=0&manId=0&statId=0">
+                                    <i class="fa fa-ban"></i> Сбросить
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card shadow mb-4 border-left-primary">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" id="DataTable" width="100%" cellspacing="0">
+                                <thead>
+                                    <tr>
+                                        @foreach (var col in Collumns)
+                                        {
+                                            <th>
+                                                @switch (col)
+                                                {
+                                                    case "status":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 25 ? 26 : 25))"><i class="@SortClass(25, 26)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "category":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 3 ? 4 : 3))"><i class="@SortClass(3, 4)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "man":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 15 ? 16 : 15))"><i class="@SortClass(15, 16)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "model":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 17 ? 18 : 17))"><i class="@SortClass(17, 18)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "location":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 13 ? 14 : 13))"><i class="@SortClass(13, 14)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "invent":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 11 ? 12 : 11))"><i class="@SortClass(11, 12)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "serial":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 21 ? 22 : 21))"><i class="@SortClass(21, 22)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "buydate":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 27 ? 28 : 27))"><i class="@SortClass(27, 28)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "installdate":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 9 ? 10 : 9))"><i class="@SortClass(9, 10)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "employer":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 7 ? 8 : 7))"><i class="@SortClass(7, 8)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "departament":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 5 ? 6 : 5))"><i class="@SortClass(5, 6)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "winname":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 29 ? 30 : 29))"><i class="@SortClass(29, 30)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "processor":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 31 ? 32 : 31))"><i class="@SortClass(31, 32)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "motherboard":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 33 ? 34 : 33))"><i class="@SortClass(33, 34)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "DDR":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 35 ? 36 : 35))"><i class="@SortClass(35, 36)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "specs":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 23 ? 24 : 23))"><i class="@SortClass(23, 24)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "cartridgemodel":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 37 ? 38 : 37))"><i class="@SortClass(37, 38)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "cartridgecount":
+                                                        <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 39 ? 40 : 39))"><i class="@SortClass(39, 40)"></i> @TableSettings.Collumns[col]</a>
+                                                        break;
+                                                    case "ipadresses":
+                                                        if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 43 ? 44 : 43))"><i class="@SortClass(43, 44)"></i> @TableSettings.Collumns[col]</a>
+                                                        }
+                                                        break;
+                                                    case "netname":
+                                                        if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 19 ? 20 : 19))"><i class="@SortClass(19, 20)"></i> @TableSettings.Collumns[col]</a>
+                                                        }
+                                                        break;
+                                                    case "biospass":
+                                                        if (@context.User.IsInRole("Admin"))
+                                                        {
+                                                            <a href="disposed/" class="text-decoration-none" @onclick="(()=>SetSort(currentSort == 41 ? 42 : 41))"><i class="@SortClass(41, 42)"></i> @TableSettings.Collumns[col]</a>
+                                                        }
+                                                        break;
+                                                }
+                                            </th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var one in unitsPaging.Units)
+                                    {
+                                        <tr class="tr-link" @onclick="@(() => OpenUnit(one))">
+                                            @foreach (var col in Collumns)
+                                            {
+                                                <td>
+                                                    @switch (col)
+                                                    {
+                                                        case "status":
+                                                            @one.UnitStatus.Name
+                                                            break;
+                                                        case "category":
+                                                            @one.Category.Name
+                                                            break;
+                                                        case "man":
+                                                            @one.Manufacturer?.Name
+                                                            break;
+                                                        case "model":
+                                                            <a href="/unit/@one.Id" class="text-decoration-none">@(!string.IsNullOrEmpty(one.Model) ? one.Model : "Не указана")</a>
+                                                            break;
+                                                        case "location":
+                                                            @one.Location
+                                                            break;
+                                                        case "invent":
+                                                            @one.InventId
+                                                            break;
+                                                        case "serial":
+                                                            @one.Serial
+                                                            break;
+                                                        case "buydate":
+                                                            @one.BuyDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))
+                                                            break;
+                                                        case "installdate":
+                                                            @one.InstallDate?.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))
+                                                            break;
+                                                        case "employer":
+                                                            @one.Employer?.Name
+                                                            break;
+                                                        case "departament":
+                                                            @one.Departament?.Name
+                                                            break;
+                                                        case "winname":
+                                                            @one.WinName?.Name
+                                                            break;
+                                                        case "processor":
+                                                            @one.Processor
+                                                            break;
+                                                        case "motherboard":
+                                                            @one.Motherboard
+                                                            break;
+                                                        case "DDR":
+                                                            @one.DDR
+                                                            break;
+                                                        case "specs":
+                                                            @one.Specs
+                                                            break;
+                                                        case "cartridgemodel":
+                                                            @one.CartridgeModel
+                                                            break;
+                                                        case "cartridgecount":
+                                                            @one.CartridgeCount;
+                                                            break;
+                                                        case "ipadresses":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                @string.Join(", ", one.IPAdresses.OrderBy(x => x.IPAddress.ToString()).Select(x => x.IPAddress.ToString()))
+                                                            }
+                                                            break;
+                                                        case "netname":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                @one.NetName
+                                                            }
+                                                            break;
+                                                        case "biospass":
+                                                            if (@context.User.IsInRole("Admin"))
+                                                            {
+                                                                @one.BiosPass
+                                                            }
+                                                            break;
+                                                    }
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                            <div class="d-sm-flex align-items-center justify-content-between">
+                                <p>Всего списанной техники: @unitsPaging.TotalCount</p>
+                                @if (unitsPaging.TotalPages > 1)
+                                {
+                                    <ul class="pagination">
+                                        @if (HasPrevious())
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(currentPage - 1))">&laquo;  Назад</button>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">&laquo;  Назад</a>
+                                            </li>
+                                        }
+                                        @if (Start > 1)
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(1))">1</button>
+                                            </li>
+                                        }
+                                        @if (Start > 2)
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">...</a>
+                                            </li>
+                                        }
+                                        @for (var i = Start; i <= Finish; i++)
+                                        {
+                                            var temp = i;
+                                            if (i == currentPage)
+                                            {
+                                                <li class="page-item active">
+                                                    <span class="page-link">
+                                                        @i
+                                                        <span class="sr-only">(current)</span>
+                                                    </span>
+                                                </li>
+                                            }
+                                            else
+                                            {
+                                                <li class="page-item">
+                                                    <button class="page-link" @onclick="(()=>SetPage(temp))">@i</button>
+                                                </li>
+                                            }
+                                        }
+                                        @if (Finish < unitsPaging.TotalPages)
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">...</a>
+                                            </li>
+                                        }
+                                        @if (Finish < unitsPaging.TotalPages)
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(unitsPaging.TotalPages))">@unitsPaging.TotalPages</button>
+                                            </li>
+                                        }
+                                        @if (HasNext())
+                                        {
+                                            <li class="page-item">
+                                                <button class="page-link" @onclick="(()=>SetPage(currentPage + 1))">Вперед  &raquo;</button>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li class="page-item disabled">
+                                                <a class="page-link" aria-disabled="true">Вперед  &raquo;</a>
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <ModalWindow @ref="tableSettings" Title="Настройки таблицы" ModalButtonOK="Применить" OnClick="()=>SaveSettings()">
+                <div class="form-group row">
+                    <div class="col">
+                        <label for="ShColls" class="col-4 col-form-label">Отображаемые столбцы</label>
+                        <Dropzone Items="Collumns" Context="item" id="ShColls" Accepts='(d, t) => CurrentUser.IsInRole("Admin") ? true : d != "ipadresses" && d != "netname" && d != "biospass"'>
+                            <button type="button" class="btn btn-success btn-block">
+                                @TableSettings.Collumns[item]
+                            </button>
+                        </Dropzone>
+                    </div>
+                    <div class="col">
+                        <label for="AvColls" class="col-4 col-form-label">Доступные столбцы</label>
+                        <Dropzone Items="HiddenCollumns" Context="item" id="AvColls">
+                            <button type="button" class="btn btn-secondary btn-block">
+                                @TableSettings.Collumns[item]
+                            </button>
+                        </Dropzone>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="Count" class="col-4 col-form-label">Количество строк в таблице</label>
+                    <div class="col">
+                        <input type="number" class="form-control" id="Count" min="0" @bind="@pageSize">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <label for="select1" class="col-4 col-form-label">Сортировка по умолчанию</label>
+                    <div class="col">
+                        <select id="select" name="select1" class="custom-select" @bind="@userSettings.SortOrder">
+                            @foreach (var option in OrderDict)
+                            {
+                                <option value="@option.Key">
+                                    @option.Value
+                                </option>
+                            }
+                        </select>
+                    </div>
+                </div>
+            </ModalWindow>
+            <ModalReport @ref="modalReport" Title="Скачать список техники" OnClick="DownloadReport">
+                <div class="form-group row">
+                    <label for="Hcolor" class="col-4 col-form-label">Цвет заголовка таблицы</label>
+                    <div class="col">
+                        <input id="Hcolor" type="color" class="form-control" @bind="@unitReport.HeaderColor">
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Текст заголовка таблицы</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="HboldCheck" @bind="@unitReport.HeaderBold">
+                            <label class="form-check-label" for="HboldCheck">
+                                Жирный текст
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Текущий фильтр</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Filter" @bind="@unitReport.Filter">
+                            <label class="form-check-label" for="Filter">
+                                Применить
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Тип техники</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Category" @bind="@unitReport.Category">
+                            <label class="form-check-label" for="Category">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Производитель</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Manufacturer" @bind="@unitReport.Manufacturer">
+                            <label class="form-check-label" for="Manufacturer">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Модель</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Model" @bind="@unitReport.Model">
+                            <label class="form-check-label" for="Model">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Статус</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="UnitStatus" @bind="@unitReport.UnitStatus">
+                            <label class="form-check-label" for="UnitStatus">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Местоположение</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Location" @bind="@unitReport.Location">
+                            <label class="form-check-label" for="Location">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Инвентарный номер</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="InventId" @bind="@unitReport.InventId">
+                            <label class="form-check-label" for="InventId">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Серийный номер</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Serial" @bind="@unitReport.Serial">
+                            <label class="form-check-label" for="Serial">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Дата приобретения</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="BuyDate" @bind="@unitReport.BuyDate">
+                            <label class="form-check-label" for="BuyDate">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Дата установки</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="InstallDate" @bind="@unitReport.InstallDate">
+                            <label class="form-check-label" for="InstallDate">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Сотрудник</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Employer" @bind="@unitReport.Employer">
+                            <label class="form-check-label" for="Employer">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Отдел</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Departament" @bind="@unitReport.Departament">
+                            <label class="form-check-label" for="Departament">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Операционная система</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="WinName" @bind="@unitReport.WinName">
+                            <label class="form-check-label" for="WinName">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Процессор</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Processor" @bind="@unitReport.Processor">
+                            <label class="form-check-label" for="Processor">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Материнская плата</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Motherboard" @bind="@unitReport.Motherboard">
+                            <label class="form-check-label" for="Motherboard">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Оперативная память</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="DDR" @bind="@unitReport.DDR">
+                            <label class="form-check-label" for="DDR">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Характеристики</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="Specs" @bind="@unitReport.Specs">
+                            <label class="form-check-label" for="Specs">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Модель картриджа</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="CartridgeModel" @bind="@unitReport.CartridgeModel">
+                            <label class="form-check-label" for="CartridgeModel">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Количество картриджей</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="CartridgeCount" @bind="@unitReport.CartridgeCount">
+                            <label class="form-check-label" for="CartridgeCount">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group row">
+                    <div class="col-4">Ремонтные работы</div>
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="ServiceWorks" @bind="@unitReport.ServiceWorks">
+                            <label class="form-check-label" for="ServiceWorks">
+                                Отображать
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                @if (@context.User.IsInRole("Admin"))
+                {
+                    <div class="form-group row">
+                        <div class="col-4">Установленое ПО</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="UnitInstalledSofts" @bind="@unitReport.UnitInstalledSofts">
+                                <label class="form-check-label" for="UnitInstalledSofts">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">IP адреса</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="IPAdresses" @bind="@unitReport.IPAdresses">
+                                <label class="form-check-label" for="IPAdresses">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Сетевое имя</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="NetName" @bind="@unitReport.NetName">
+                                <label class="form-check-label" for="NetName">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Пароль BIOS</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="BiosPass" @bind="@unitReport.BiosPass">
+                                <label class="form-check-label" for="BiosPass">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Аккаунты Windows</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="WinAccounts" @bind="@unitReport.WinAccounts">
+                                <label class="form-check-label" for="WinAccounts">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">RDP аккаунты</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="RdpConnects" @bind="@unitReport.RdpConnects">
+                                <label class="form-check-label" for="RdpConnects">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-4">Комментарий</div>
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="Comment" @bind="@unitReport.Comment">
+                                <label class="form-check-label" for="Comment">
+                                    Отображать
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <div class="form-group row">
+                    <label for="Ccolor" class="col-4 col-form-label">Цвет строк таблицы</label>
+                    <div class="col">
+                        <input id="Ccolor" type="color" class="form-control" @bind="@unitReport.CellsColor">
+                    </div>
+                </div>
+            </ModalReport>
+        }
+    </Authorized>
+    <NotAuthorized>
+        <p>У вас нет доступа в этот раздел</p>
+    </NotAuthorized>
+</AuthorizeView>
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+    ClaimsPrincipal CurrentUser = new ClaimsPrincipal();
+    ModalWindow tableSettings;
+    UserSettings userSettings;
+    UnitReport unitReport;
+    int currentPage = 1;
+    int VisiblePages = 5;
+    int Start;
+    int Finish;
+    int? currentSort;
+    int pageSize;
+    UnitsPaging unitsPaging;
+    ModalReport modalReport;
+    const string quote = "\"";
+    bool FiltersCollapse = false;
+    List<string> Collumns;
+    List<string> CollumnsProbe;
+    List<string> HiddenCollumns;
+    Dictionary<int, string> OrderDict = new Dictionary<int, string>()
+    {
+        [1] = "Дата добавления (по возр.)",
+        [2] = "Дата добавления (по убыв.)",
+        [3] = "Тип (по возр.)",
+        [4] = "Тип (по убыв.)",
+        [5] = "Отдел (по возр.)",
+        [6] = "Отдел (по убыв.)",
+        [7] = "Сотрудник (по возр.)",
+        [8] = "Сотрудник (по убыв.)",
+        [9] = "Дата установки (по возр.)",
+        [10] = "Дата установки (по убыв.)",
+        [11] = "Инвентарный номер (по возр.)",
+        [12] = "Инвентарный номер (по убыв.)",
+        [13] = "Местоположение (по возр.)",
+        [14] = "Местоположение (по убыв.)",
+        [15] = "Производитель (по возр.)",
+        [16] = "Производитель (по убыв.)",
+        [17] = "Модель (по возр.)",
+        [18] = "Модель (по убыв.)",
+        [19] = "Сетевое имя (по возр.)",
+        [20] = "Сетевое имя (по убыв.)",
+        [21] = "Серийный номер (по возр.)",
+        [22] = "Инвентарный номер (по убыв.)",
+        [23] = "Характеристики (по возр.)",
+        [24] = "Характеристики (по убыв.)",
+        [25] = "Статус (по возр.)",
+        [26] = "Статус (по убыв.)",
+        [27] = "Дата приобретения (по возр.)",
+        [28] = "Дата приобретения (по убыв.)",
+        [29] = "Операционная система (по возр.)",
+        [30] = "Операционная система (по убыв.)",
+        [31] = "Процессор (по возр.)",
+        [32] = "Процессор (по убыв.)",
+        [33] = "Материнская плата (по возр.)",
+        [34] = "Материнская плата (по убыв.)",
+        [35] = "Оперативная память (по возр.)",
+        [36] = "Оперативная память (по убыв.)",
+        [37] = "Модель картриджа (по возр.)",
+        [38] = "Модель картриджа (по убыв.)",
+        [39] = "Количество картриджей (по возр.)",
+        [40] = "Количество картриджей (по убыв.)",
+        [41] = "Пароль BIOS (по возр.)",
+        [42] = "Пароль BIOS (по убыв.)",
+        [43] = "IP адреса (по возр.)",
+        [44] = "IP адреса (по убыв.)"
+
+    };
+    List<Category> categories;
+    int catFilter = 0;
+    List<Departament> departaments;
+    int depFilter = 0;
+    List<Employer> employers;
+    int empFilter = 0;
+    List<Manufacturer> manufacturers;
+    int manFilter = 0;
+    List<UnitStatus> statuses;
+    int statFilter = 0;
+    List<WinName> winnames;
+    int winFilter = 0;
+    List<InstalledSoft> softs;
+    int softFilter = 0;
+
+    private bool HasPrevious()
+    {
+        return currentPage > 1 && unitsPaging.TotalPages > 1;
+    }
+    private bool HasNext()
+    {
+        return currentPage < unitsPaging.TotalPages;
+    }
+
+    void CalcPages()
+    {
+        VisiblePages = 5;
+        var half = (int)Math.Floor(VisiblePages / 2d);
+        Start = Math.Max(currentPage - half, 1);
+        Finish = Math.Min(currentPage + half, unitsPaging.TotalPages);
+        VisiblePages = Math.Min(VisiblePages, unitsPaging.TotalPages);
+        if (Start == 1)
+        { Finish = VisiblePages; }
+        if (Finish >= unitsPaging.TotalPages)
+        { Start = unitsPaging.TotalPages - VisiblePages; }
+        if (Start < 1)
+        { Start = 1; }
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HeadElementHelper.SetTitleAsync("Списанная техника - Учет техники");
+        CurrentUser = (await authenticationStateTask).User;
+        GetQueryStringValues();
+        await GetData();
+        MyNavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    async void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        GetQueryStringValues();
+        await GetData();
+    }
+
+    public void Dispose()
+    {
+        MyNavigationManager.LocationChanged -= HandleLocationChanged;
+    }
+
+    void GetQueryStringValues()
+    {
+        MyNavigationManager.TryGetQueryString<int>("depId", out depFilter);
+        MyNavigationManager.TryGetQueryString<int>("empId", out empFilter);
+        MyNavigationManager.TryGetQueryString<int>("winId", out winFilter);
+        MyNavigationManager.TryGetQueryString<int>("softId", out softFilter);
+        MyNavigationManager.TryGetQueryString<int>("catId", out catFilter);
+        MyNavigationManager.TryGetQueryString<int>("manId", out manFilter);
+        MyNavigationManager.TryGetQueryString<int>("statId", out statFilter);
+        if (depFilter > 0 || empFilter > 0 || winFilter > 0 || softFilter > 0
+            || catFilter > 0 || manFilter > 0 || statFilter > 0)
+        {
+            FiltersCollapse = true;
+        }
+    }
+
+    public async Task GetData()
+    {
+        userSettings = await @Service.GetSettings(_UserManager.GetUserId(CurrentUser), CurrentUser.IsInRole("Admin"));
+        if (currentSort == null) currentSort = userSettings.SortOrder;
+        pageSize = userSettings.RowsCount;
+        Collumns = TableSettings.DeserializeSettings(userSettings.CollumnSettings);
+        CollumnsProbe = Collumns;
+        HiddenCollumns = TableSettings.Collumns.Where(x => !Collumns.Contains(x.Key)).Select(x => x.Key).ToList();
+        categories = await @Service.CategoriesList();
+        departaments = await @Service.GetDepartamentsAdd();
+        employers = await @Service.GetEmployersAdd();
+        manufacturers = await @Service.GetManufacturersAdd();
+        statuses = await @Service.GetStatusesForAdd();
+        winnames = await @Service.GetWinNamesAdd();
+        softs = await Service.GetInstalledSofts();
+        await GetUnits();
+    }
+
+    async Task GetUnits()
+    {
+        unitsPaging = await @Service.DisposedPaging(currentSort ?? 1, currentPage, userSettings.RowsCount, catFilter, depFilter, empFilter, manFilter, statFilter, winFilter, softFilter);
+        CalcPages();
+    }
+
+    public async void SetPage(int page)
+    {
+        currentPage = page;
+        await GetUnits();
+    }
+
+    void OpenSettings()
+    {
+        tableSettings.Show();
+    }
+
+    async void SaveSettings()
+    {
+        bool changed = false;
+        if (Collumns != CollumnsProbe)
+        {
+            userSettings.CollumnSettings = TableSettings.SerializeSettings(Collumns);
+            changed = true;
+        }
+        if (userSettings.RowsCount != pageSize)
+        {
+            userSettings.RowsCount = pageSize;
+            changed = true;
+        }
+        if (currentSort != userSettings.SortOrder)
+        {
+            currentSort = userSettings.SortOrder;
+            currentPage = 1;
+            changed = true;
+        }
+
+        if (changed)
+        {
+            var result = await @Service.SaveSettings(userSettings.Id);
+            await GetUnits();
+
+        }
+        tableSettings.Show();
+    }
+
+    async void SetSort(int sort)
+    {
+        currentSort = sort;
+        currentPage = 1;
+        await GetUnits();
+    }
+
+    string SortClass(int sort1, int sort2)
+    {
+        if (currentSort == sort1)
+        {
+            return "fas fa-sort-up";
+        }
+        else if (currentSort == sort2)
+        {
+            return "fas fa-sort-down";
+        }
+        else
+        {
+            return "fas fa-sort";
+        }
+    }
+
+    void OpenUnit(Unit unit)
+    {
+        MyNavigationManager.NavigateTo("unit/" + unit.Id);
+    }
+
+    public Task<IEnumerable<UnitStatus>> SearchStatus(string searchText)
+    {
+        var result = statuses.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<UnitStatus>>(result);
+    }
+
+    public int ConvertStatus(UnitStatus item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string StatusName(int id)
+    {
+        return id > 0 ? statuses.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Category>> SearchCat(string searchText)
+    {
+        var result = categories.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Category>>(result);
+    }
+
+    public int ConvertCat(Category item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string CatName(int id)
+    {
+        return id > 0 ? categories.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Manufacturer>> SearchMan(string searchText)
+    {
+        var result = manufacturers.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Manufacturer>>(result);
+    }
+
+    public int ConvertMan(Manufacturer item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string ManName(int id)
+    {
+        return id > 0 ? manufacturers.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Employer>> SearchEmp(string searchText)
+    {
+        var result = employers.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Employer>>(result);
+    }
+
+    public int ConvertEmp(Employer item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string EmpName(int id)
+    {
+        return id > 0 ? employers.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<Departament>> SearchDep(string searchText)
+    {
+        var result = departaments.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<Departament>>(result);
+    }
+
+    public int ConvertDep(Departament item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string DepName(int id)
+    {
+        return id > 0 ? departaments.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<WinName>> SearchWin(string searchText)
+    {
+        var result = winnames.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<WinName>>(result);
+    }
+
+    public int ConvertWin(WinName item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string WinName(int id)
+    {
+        return id > 0 ? winnames.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    public Task<IEnumerable<InstalledSoft>> SearchSoft(string searchText)
+    {
+        var result = softs.Where(x => x.Name.ToLower().Contains(searchText.ToLower())).ToList();
+        return Task.FromResult<IEnumerable<InstalledSoft>>(result);
+    }
+
+    public int ConvertSoft(InstalledSoft item)
+    {
+        return item?.Id ?? 0;
+    }
+
+    public string SoftName(int id)
+    {
+        return id > 0 ? softs.Where(x => x.Id == id).FirstOrDefault().Name : "Все";
+    }
+
+    void Report()
+    {
+        bool secure = CurrentUser.IsInRole("Admin");
+        unitReport = new UnitReport
+        {
+            CellsColor = "#b7e1cd",
+            HeaderBold = true,
+            HeaderColor = "#ffbf00",
+            Filter = true,
+            BiosPass = secure,
+            Comment = secure,
+            IPAdresses = secure,
+            UnitInstalledSofts = secure,
+            NetName = secure,
+            WinAccounts = secure,
+            RdpConnects = secure,
+            BuyDate = true,
+            CartridgeCount = true,
+            CartridgeModel = true,
+            Category = true,
+            DDR = true,
+            Departament = true,
+            Employer = true,
+            InstallDate = true,
+            InventId = true,
+            Location = true,
+            Manufacturer = true,
+            Model = true,
+            Motherboard = true,
+            Processor = true,
+            Serial = true,
+            ServiceWorks = true,
+            Specs = true,
+            UnitStatus = true,
+            WinName = true
+        };
+        modalReport.Show();
+    }
+
+    void DownloadReport()
+    {
+        modalReport.StartWork();
+        if (unitReport.Filter)
+        {
+            unitReport.catFilter = catFilter;
+            unitReport.depFilter = depFilter;
+            unitReport.empFilter = empFilter;
+            unitReport.manFilter = manFilter;
+            unitReport.statFilter = statFilter;
+            unitReport.winFilter = winFilter;
+            unitReport.softFilter = softFilter;
+        }
+        var report = @Service.DisposedReport(unitReport);
+        JS.SaveAs($"disposed-{DateTime.Now.ToString("d")}.xlsx", report);
+        modalReport.Show();
+    }
+}
