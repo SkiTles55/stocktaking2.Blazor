@@ -2558,12 +2558,12 @@ namespace stocktaking2.Blazor.Data
                     if (report.Category)
                     {
                         celc++;
-                        worksheet.Cells[row, celc].Value = unit.Category.Name;
+                        worksheet.Cells[row, celc].Value = unit.Category?.Name;
                     }
                     if (report.Manufacturer)
                     {
                         celc++;
-                        worksheet.Cells[row, celc].Value = unit.Manufacturer.Name;
+                        worksheet.Cells[row, celc].Value = unit.Manufacturer?.Name;
                     }
                     if (report.Model)
                     {
@@ -2573,7 +2573,7 @@ namespace stocktaking2.Blazor.Data
                     if (report.UnitStatus)
                     {
                         celc++;
-                        worksheet.Cells[row, celc].Value = unit.UnitStatus.Name;
+                        worksheet.Cells[row, celc].Value = unit.UnitStatus?.Name;
                     }
                     if (report.Location)
                     {
