@@ -962,7 +962,7 @@
         if (currentSort == null) currentSort = userSettings.SortOrder;
         pageSize = userSettings.RowsCount;
         Collumns = TableSettings.DeserializeSettings(userSettings.CollumnSettings);
-        CollumnsProbe = Collumns;
+        CollumnsProbe = TableSettings.DeserializeSettings(userSettings.CollumnSettings);
         HiddenCollumns = TableSettings.Collumns.Where(x => !Collumns.Contains(x.Key)).Select(x => x.Key).ToList();
         categories = await @Service.CategoriesList();
         departaments = await @Service.GetDepartamentsAdd();
@@ -1010,12 +1010,11 @@
             currentPage = 1;
             changed = true;
         }
-
         if (changed)
         {
+            Console.Write("fuck");
             var result = await @Service.SaveSettings(userSettings.Id);
             await GetUnits();
-
         }
         tableSettings.Show();
     }
@@ -1213,7 +1212,7 @@
             unitReport.softFilter = softFilter;
         }
         var report = @Service.UnitsReport(unitReport);
-        JS.SaveAs($"units-{DateTime.Now.ToString("d")}.xlsx", report);
+        JS.SaveAs($"units.xlsx", report);
         modalReport.Show();
     }
 }

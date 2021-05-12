@@ -506,7 +506,7 @@
     {
         modalReport.StartWork();
         var report = @Service.EmailsReport(emailReport);
-        JS.SaveAs($"emails-{DateTime.Now.ToString("d")}.xlsx", report);
+        JS.SaveAs($"emails.xlsx", report);
         modalReport.Show();
     }
 

@@ -2,6 +2,7 @@
 @using stocktaking2.Blazor.Data
 @using stocktaking2.Blazor.Data.DB
 @using stocktaking2.Blazor.Helpers
+@using System.Globalization
 @using System.Security.Claims
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
@@ -308,7 +309,7 @@
                                                             <tr>
                                                                 <td>@SW.WorkName</td>
                                                                 <td>@SW.WorkDescr</td>
-                                                                <td>@SW.WorkDate.ToString("d")</td>
+                                                                <td>@SW.WorkDate.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
                                                                 <td>
                                                                     <button class="btn btn-danger btn-circle btn-sm" title="Удалить" @onclick="@(() => DelSW(SW))">
                                                                         <i class="fas fa-trash"></i>

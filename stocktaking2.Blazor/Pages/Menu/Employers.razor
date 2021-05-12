@@ -566,7 +566,7 @@
     {
         modalReport.StartWork();
         var report = @Service.EmpsReport(empReport);
-        JS.SaveAs($"employers-{DateTime.Now.ToString("d")}.xlsx", report);
+        JS.SaveAs($"employers.xlsx", report);
         modalReport.Show();
     }
 

@@ -488,7 +488,7 @@
     {
         modalReport.StartWork();
         var report = @Service.DepsReport(depReport);
-        JS.SaveAs($"departaments-{DateTime.Now.ToString("d")}.xlsx", report);
+        JS.SaveAs($"departaments.xlsx", report);
         modalReport.Show();
     }
 

@@ -900,11 +900,11 @@ namespace stocktaking2.Blazor.Data
                 switch (what)
                 {
                     case 1:
-                        unitHistory.Change = $"Дата приобретения {quote}{(unit.BuyDate == null ? "Не указана" : unit.BuyDate.Value.ToString("d"))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d"))}{quote}.";
+                        unitHistory.Change = $"Дата приобретения {quote}{(unit.BuyDate == null ? "Не указана" : unit.BuyDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")))}{quote}.";
                         unit.BuyDate = newDate;
                         break;
                     case 2:
-                        unitHistory.Change = $"Дата установки {quote}{(unit.InstallDate == null ? "Не указана" : unit.InstallDate.Value.ToString("d"))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d"))}{quote}.";
+                        unitHistory.Change = $"Дата установки {quote}{(unit.InstallDate == null ? "Не указана" : unit.InstallDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")))}{quote} изменена на {quote}{(newDate == null ? "Не указана" : newDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")))}{quote}.";
                         unit.InstallDate = newDate;
                         break;
                     default:

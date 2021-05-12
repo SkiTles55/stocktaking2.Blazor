@@ -1207,7 +1207,7 @@
             unitReport.softFilter = softFilter;
         }
         var report = @Service.DisposedReport(unitReport);
-        JS.SaveAs($"disposed-{DateTime.Now.ToString("d")}.xlsx", report);
+        JS.SaveAs($"disposed.xlsx", report);
         modalReport.Show();
     }
 }

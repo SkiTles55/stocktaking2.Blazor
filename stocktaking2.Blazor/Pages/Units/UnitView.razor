@@ -166,7 +166,7 @@
                                         <p>Дата приобретения</p>
                                     </div>
                                     <div class="col-md-auto">
-                                        <p><b>@(unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d") : "Не указана")</b></p>
+                                        <p><b>@(unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")) : "Не указана")</b></p>
                                     </div>
                                     @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
@@ -185,7 +185,7 @@
                                         <p>Дата установки</p>
                                     </div>
                                     <div class="col-md-auto">
-                                        <p><b>@(unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d") : "Не указана")</b></p>
+                                        <p><b>@(unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")) : "Не указана")</b></p>
                                     </div>
                                     @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                     {
@@ -392,7 +392,7 @@
                                                     @foreach (var sw in unit.StoredFiles)
                                                     {
                                                         <tr>
-                                                            <td>@sw.UploadData.ToString("d")</td>
+                                                            <td>@sw.UploadData.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
                                                             <td><button class="btn btn-link" @onclick="@(()=>DownloadFile(sw))">@sw.FileName</button></td>
                                                             @if (@context.User.IsInRole("Admin") && !unit.Disposed)
                                                             {
@@ -446,7 +446,7 @@
                                                     @foreach (var sw in unit.ServiceWorks)
                                                     {
                                                         <tr>
-                                                            <td>@sw.WorkDate.ToString("d")</td>
+                                                            <td>@sw.WorkDate.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU"))</td>
                                                             <td>@sw.WorkName</td>
                                                             <td>@sw.WorkDescr</td>
                                                             @if (@context.User.IsInRole("Admin") && !unit.Disposed)
@@ -1750,9 +1750,9 @@
         if (unit.Category.Serial)
             html += String.Format(row, "Серийный номер", !string.IsNullOrEmpty(unit.Serial) ? unit.Serial : "Не указан");
         if (unit.Category.BuyDate)
-            html += String.Format(row, "Дата покупки", unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d") : "Не указана");
+            html += String.Format(row, "Дата покупки", unit.BuyDate.HasValue ? unit.BuyDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")) : "Не указана");
         if (unit.Category.InstallDate)
-            html += String.Format(row, "Дата установки", unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d") : "Не указана");
+            html += String.Format(row, "Дата установки", unit.InstallDate.HasValue ? unit.InstallDate.Value.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")) : "Не указана");
         if (unit.Category.Employer)
             html += String.Format(row, "Сотрудник", unit.EmployerId != null ? unit.Employer.Name : "Не указан");
         if (unit.Category.Departament)
@@ -1772,7 +1772,7 @@
         if (unit.Category.CartridgeCount)
             html += String.Format(row, "Количество картриджей", unit.CartridgeCount != null ? unit.CartridgeCount.ToString() : "Не указано");
         if (unit.Category.ServiceWorks && unit.ServiceWorks.Count > 0)
-            html += String.Format(row, "Ремонтные работы", string.Join("<br/>", unit.ServiceWorks.Select(x => x.WorkDate.ToString("d") + " " + x.WorkName + ". " + x.WorkDescr).ToArray()));
+            html += String.Format(row, "Ремонтные работы", string.Join("<br/>", unit.ServiceWorks.Select(x => x.WorkDate.ToString("d", CultureInfo.CreateSpecificCulture("ru-RU")) + " " + x.WorkName + ". " + x.WorkDescr).ToArray()));
         if (CurrentUser.IsInRole("Admin"))
         {
             if (unit.Category.InstaledSofts && unit.UnitInstalledSofts.Count() > 0)
